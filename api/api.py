@@ -31,7 +31,7 @@ app = Flask(__name__)
 def get_current_time():
     return {'time': time.time()}
 
-
+# call to update dashboard database
 @app.cli.command()
 def order_poll():
     date = '\'2021-03-04\''  # 'getdate()'
