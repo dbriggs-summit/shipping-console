@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 
 from flask import Flask
 import config
+import json
 
 dyna_server = config.dynaServer
 dyna_db = config.dynaDBName
@@ -58,7 +59,7 @@ def order_poll():
             where h.[x04472474_ShippedDate] = {date} AND h.[InvoiType] = 51 AND 
                 d.[usrShipFromWarehouse] = 4 AND h.[x04472474_Shipped] = 1 AND 
                 h.[ShipVia] != '' and i.itemid not in ('j4g','j5u','x1','j4')
-        """)
+        """).fetchall()
 
     new_orders = []
     idx = 0
@@ -70,7 +71,7 @@ def order_poll():
                 "id": line['id'],
                 "ship_via": line['ship_via'],
                 "order_id": line['order_id'],
-                "ship_date": line['ship_date'],
+                "ship_date": line['ship_date'].strftime("%Y-%m-%d"),
                 "order_type": line['order_type'],
                 "status": line['status'],
                 "lines": []
@@ -79,8 +80,8 @@ def order_poll():
             idx += 1
 
         new_orders[order_list[line['id']]]["lines"].append({
-            "qty": line['qty'],
-            "qty_scanned": line['qty_scanned'],
+            "qty": str(line['qty']),
+            "qty_scanned": str(line['qty_scanned']),
             "ship_from": line['ship_from'],
             "upc_code": line['upc_code'],
             "item_id": line['item_id'],
@@ -91,9 +92,9 @@ def order_poll():
     session = Session()
 
     try:
-        session.execute('delete from orders')
+        session.execute('delete from dashboard_orders')
         for order in new_orders:
-            session.execute(f'insert into orders values({order["id"]}, {order})')
+            session.execute(f"insert into dashboard_orders values({order['id']}, '{json.dumps(order)}')")
         session.commit()
     except exc.SQLAlchemyError as e:
         print(e)
