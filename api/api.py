@@ -2,9 +2,10 @@ import time
 from sqlalchemy import create_engine, exc
 from sqlalchemy.orm import sessionmaker
 
-from flask import Flask
+from flask import Flask, request
 import config
 import json
+import db
 
 dyna_server = config.dynaServer
 dyna_db = config.dynaDBName
@@ -23,13 +24,15 @@ postgres_eng = \
                   f'{postgres_server}:5432/{postgres_db}')
 
 app = Flask(__name__)
+db.init_app(app)
 
+app.config.from_pyfile('config.py', silent=True)
 
-# set up persistent data store for orders that lives outside of query lifetime
 
 @app.route('/time')
 def get_current_time():
     return {'time': time.time()}
+
 
 # call to update dashboard database
 @app.cli.command()
@@ -101,6 +104,41 @@ def order_poll():
         session.rollback()
     finally:
         session.close()
+
+
+@app.route('/orders', methods=('GET', 'POST'))
+def orders():
+    Session = sessionmaker(bind=postgres_eng)
+    session = Session()
+    if request.method == 'GET':
+        #return json for one order
+        result = session.execute("select id, order_json from dashboard_orders")
+        session.close()
+        js = result.fetchall()
+        if js:
+            return js
+    return
+
+
+@app.route('/orders/<int:id>', methods=('GET', 'PUT', 'DELETE'))
+def order(id):
+    Session = sessionmaker(bind=postgres_eng)
+    session = Session()
+    if request.method == 'PUT':
+        #process update code
+        return
+    elif request.method == 'DELETE':
+        #deleting orders is unsupported
+        return
+    elif request.method == 'GET':
+        #return json for one order
+        result = session.execute("select id, order_json from dashboard_orders where id=':order_id'",
+                                 {'order_id': id})
+        session.close()
+        js = result.fetchone()
+        if js:
+            return js[1]
+    return
 
 # @app.route('/update_line')
 # def update_line():
