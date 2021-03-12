@@ -1,3 +1,6 @@
+# TODO: better CORS support
+# TODO: support filtering in /orders
+# TODO: refactor to separate DB setup
 from flask import Flask, request, make_response
 import config
 import json
