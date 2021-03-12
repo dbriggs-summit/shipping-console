@@ -108,6 +108,7 @@ def orders():
     Session = sessionmaker(bind=postgres_eng)
     session = Session()
     if request.method == 'OPTIONS':
+        session.close()
         response = build_cors_response('')
         response.headers['Allow'] = 'OPTIONS, GET'
         return response
@@ -131,6 +132,18 @@ def orders():
             if _filter:
                 pass
 
+            if _sort:
+                sort_args = _sort.strip('][').split(',')
+                rever = False
+                sort_parm = sort_args[0].strip('"')
+                if sort_args[1].strip('"') == 'DESC':
+                    rever = True
+                try:
+                    output = sorted(output, key=lambda x: x[sort_parm], reverse=rever)
+                except KeyError:
+                    print(output[0])
+                    print(f'Key {sort_parm} does not exist')
+
             if _range:
                 range_args = _range.strip('][').split(',')
 
@@ -146,9 +159,6 @@ def orders():
                     end = total_size
                 output = output[begin:end]
 
-            if _sort:
-                pass
-
             session.close()
 
             response = build_cors_response(json.dumps(output))
@@ -163,6 +173,12 @@ def orders():
 def order(order_id):
     Session = sessionmaker(bind=postgres_eng)
     session = Session()
+
+    if request.method == 'OPTIONS':
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS, GET'
+        session.close()
+        return response
     if request.method == 'PUT':
         # updating orders are unsupported for now
         session.close()
