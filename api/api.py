@@ -2,7 +2,7 @@ import time
 from sqlalchemy import create_engine, exc
 from sqlalchemy.orm import sessionmaker
 
-from flask import Flask, request
+from flask import Flask, request, make_response
 import config
 import json
 import db
@@ -45,7 +45,10 @@ def order_poll():
                 h.shipvia as ship_via, 
                 h.OrderId as order_id,
                 h.x04472474_ShippedDate as ship_date,
-                h.InvoiType as order_type,
+                case when h.invoitype = 1 then 'Invoiced'
+                    when h.invoitype = 50 then 'Estimate'
+                    when h.invoitype = 51 then 'Open'
+                    else 'Unknown' end as order_type,
                 w.WarehouseId as ship_from,
                 case when x04472474_BLStatus is NULL then 'Open'
                     when x04472474_BLStatus = 'Ready to Ship' then 'Closed'
@@ -96,8 +99,8 @@ def order_poll():
 
     try:
         session.execute('delete from dashboard_orders')
-        for order in new_orders:
-            session.execute(f"insert into dashboard_orders values({order['id']}, '{json.dumps(order)}')")
+        for item in new_orders:
+            session.execute(f"insert into dashboard_orders values({order['id']}, '{json.dumps(item)}')")
         session.commit()
     except exc.SQLAlchemyError as e:
         print(e)
@@ -106,40 +109,104 @@ def order_poll():
         session.close()
 
 
-@app.route('/orders', methods=('GET', 'POST'))
+# POST is unsupported because we don't allow new orders
+@app.route('/orders', methods=['GET', 'OPTIONS'])
 def orders():
     Session = sessionmaker(bind=postgres_eng)
     session = Session()
-    if request.method == 'GET':
-        #return json for one order
-        result = session.execute("select id, order_json from dashboard_orders")
-        session.close()
-        js = result.fetchall()
-        if js:
-            return js
+    if request.method == 'OPTIONS':
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS, GET'
+        return response
+
+    if request.method == 'GET' or 'OPTIONS':
+        # return json for one order
+        _sort = request.args.get('sort')
+        _range = request.args.get('range')
+        _filter = request.args.get('filter')
+
+        result = session.execute("select order_json from dashboard_orders order by id")
+
+        # pull order out of the tuple resultProxy returns
+        js = result_process(result.fetchall())
+        output = js
+        if output:
+            begin = 0
+            end = len(output)
+            total_size = len(output)
+
+            if _filter:
+                pass
+
+            if _range:
+                range_args = _range.strip('][').split(',')
+
+                try:
+                    begin = int(range_args[0])
+                except TypeError:
+                    begin = 0
+                try:
+                    end = int(range_args[1]) + 1
+                except TypeError:
+                    end = total_size
+                if end > len(output):  # if range is too long, wrap to max length
+                    end = total_size
+                output = output[begin:end]
+
+            if _sort:
+                pass
+
+            session.close()
+            # print(js)
+            response = build_cors_response(json.dumps(output))
+            response.headers['Content-Range'] = f'orders {begin}-{end}/{total_size}'
+            response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
+            return response
+    session.close()
     return
 
 
-@app.route('/orders/<int:id>', methods=('GET', 'PUT', 'DELETE'))
-def order(id):
+@app.route('/orders/<int:order_id>', methods=('GET', 'PUT', 'DELETE'))
+def order(order_id):
     Session = sessionmaker(bind=postgres_eng)
     session = Session()
     if request.method == 'PUT':
-        #process update code
+        # process update code
+        session.close()
         return
     elif request.method == 'DELETE':
-        #deleting orders is unsupported
+        # deleting orders is unsupported
+        session.close()
         return
     elif request.method == 'GET':
-        #return json for one order
-        result = session.execute("select id, order_json from dashboard_orders where id=':order_id'",
-                                 {'order_id': id})
+        # return json for one order
+        result = session.execute("select order_json from dashboard_orders where id=':order_id'",
+                                 {'order_id': order_id})
         session.close()
-        js = result.fetchone()
+        js = result_process(result.fetchone())
         if js:
-            return js[1]
-    return
+            return json.dumps(js)
+        else:
+            return 'No data'
+    else:
+        session.close()
+    return 'No data'
 
+
+def result_process(result):
+    if result:
+        if len(result) > 1:
+            return list(map(lambda x: x[0], result))
+        else:
+            return result[0]
+
+
+def build_cors_response(output):
+    response = make_response(output)
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = '*'
+    return response
 # @app.route('/update_line')
 # def update_line():
 

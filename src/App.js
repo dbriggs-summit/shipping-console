@@ -1,26 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import * as React from "react";
+import {Admin, Resource, ListGuesser} from 'react-admin';
+import jsonServerProvider from 'ra-data-simple-rest';
 
-function App() {
-  const [currentTime, setCurrentTime] = useState(0);
-
-  useEffect(() => {
-    fetch('/time').then(res => res.json()).then(data => {
-      setCurrentTime(data.time);
-    });
-  }, []);
-
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          The current time is {currentTime}
-        </p>
-      </header>
-    </div>
-  );
-}
+const dataProvider = jsonServerProvider('http://127.0.0.1:5000/');
+const App = () => (
+    <Admin dataProvider={dataProvider}>
+        <Resource name="orders" list={ListGuesser} />
+    </Admin>
+);
 
 export default App;

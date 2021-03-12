@@ -2,7 +2,10 @@ select h.invoiid as id,
 	h.shipvia as ship_via, 
 	h.OrderId as order_id,
 	h.x04472474_ShippedDate as ship_date,
-	h.InvoiType as order_type,
+	case when h.invoitype = 1 then 'Invoiced'
+        when h.invoitype = 50 then 'Estimate'
+        when h.invoitype = 51 then 'Open'
+        else 'Unknown' end as order_type,
 	w.WarehouseId as ship_from,
 	case when x04472474_BLStatus is NULL then 'Open'
 		when x04472474_BLStatus = 'Ready to Ship' then 'Closed'
