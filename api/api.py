@@ -1,11 +1,9 @@
-import time
-from sqlalchemy import create_engine, exc
-from sqlalchemy.orm import sessionmaker
-
 from flask import Flask, request, make_response
 import config
 import json
 import db
+from sqlalchemy import create_engine, exc
+from sqlalchemy.orm import sessionmaker
 
 dyna_server = config.dynaServer
 dyna_db = config.dynaDBName
@@ -27,11 +25,6 @@ app = Flask(__name__)
 db.init_app(app)
 
 app.config.from_pyfile('config.py', silent=True)
-
-
-@app.route('/time')
-def get_current_time():
-    return {'time': time.time()}
 
 
 # call to update dashboard database
@@ -141,13 +134,13 @@ def orders():
             if _range:
                 range_args = _range.strip('][').split(',')
 
-                try:
+                try:    # if begin and end aren't ints, make them 0 and len
                     begin = int(range_args[0])
                 except TypeError:
                     begin = 0
                 try:
-                    end = int(range_args[1]) + 1
-                except TypeError:
+                    end = int(range_args[1]) + 1    # end is # of items to
+                except TypeError:                   # return, not list range
                     end = total_size
                 if end > len(output):  # if range is too long, wrap to max length
                     end = total_size
@@ -157,7 +150,7 @@ def orders():
                 pass
 
             session.close()
-            # print(js)
+
             response = build_cors_response(json.dumps(output))
             response.headers['Content-Range'] = f'orders {begin}-{end}/{total_size}'
             response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
@@ -171,7 +164,7 @@ def order(order_id):
     Session = sessionmaker(bind=postgres_eng)
     session = Session()
     if request.method == 'PUT':
-        # process update code
+        # updating orders are unsupported for now
         session.close()
         return
     elif request.method == 'DELETE':
@@ -185,12 +178,13 @@ def order(order_id):
         session.close()
         js = result_process(result.fetchone())
         if js:
-            return json.dumps(js)
+            response = build_cors_response(json.dumps(js))
+            return response
         else:
-            return 'No data'
+            return build_cors_response('No Data')
     else:
         session.close()
-    return 'No data'
+    return build_cors_response('No Data')
 
 
 def result_process(result):
