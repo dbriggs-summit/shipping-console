@@ -95,7 +95,6 @@ const Dashboard = () => {
                     <OrderCard value={open_orders} title="Open Orders" icon={ArrowDropDownCircleIcon} />
                     <Spacer />
                     <OrderCard value={closed_orders} title="Closed Orders" icon={CheckCircleIcon} />
-                    <Spacer />
                 </div>
                 <VerticalSpacer />
                 <ShipViaGrid value={ship_vias} />
