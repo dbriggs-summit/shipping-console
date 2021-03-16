@@ -2,22 +2,21 @@ import * as React from "react";
 import { DataGrid } from '@material-ui/data-grid';
 
 const columns = [
-    {field: 'ship_via', headerName: 'Ship Via'},
-    {field: 'total_orders', headerName: 'Total Orders', type: 'number'},
-    {field: 'open_orders', headerName: 'Open Orders', type: 'number'},
-    {field: 'closed_orders', headerName: 'Ready to Ship', type: 'number'},
+    {field: 'ship_via', headerName: 'Ship Via', width: 210},
+    {field: 'total_orders', headerName: 'Total Orders', type: 'number', width: 145},
+    {field: 'open_orders', headerName: 'Open Orders', type: 'number', width: 145},
+    {field: 'closed_orders', headerName: 'Ready to Ship', type: 'number', width: 145},
 ];
 
 const ShipViaGrid = props => {
-    console.log(props);
-    const ship_vias = props;
-    const ship_via_grid = (ship_vias === undefined ?
+    const {...ship_vias} = props;
+    const ship_via_grid = (ship_vias.value === undefined ?
         [{'id': 0,
         'ship_via': '',
         'total_orders': 0,
         'open_orders': 0,
         'closed_orders': 0
-        }] : Object.values(ship_vias).reduce(
+        }] : Object.values(ship_vias.value).reduce(
         (grid, ship_via) => {
             grid.push({
                 'id': grid.length,
@@ -28,15 +27,10 @@ const ShipViaGrid = props => {
                 });
             return grid;
 
-        }, {'id': 0,
-            'ship_via': '',
-            'total_orders': 0,
-            'open_orders': 0,
-            'closed_orders': 0
-        }
+        },  []
     ));
 
-    return <DataGrid rows={ship_via_grid} columns={columns}  />;
+    return <DataGrid rows={ship_via_grid} columns={columns} autoHeight="true" />;
 };
 
 export default ShipViaGrid;
