@@ -1,155 +1,20 @@
 # TODO: better CORS support
 # TODO: support filtering in /orders
-# TODO: refactor to separate DB setup
-from flask import Flask, request, make_response
-import config
+from flask import Flask, request, make_response, jsonify
 import json
 import db
-from sqlalchemy import create_engine, exc
+from sqlalchemy import exc
 from sqlalchemy.orm import sessionmaker
-import redis
-from rq import Queue
-
-dyna_server = config.dynaServer
-dyna_db = config.dynaDBName
-dyna_user = config.dynaUserName
-dyna_password = config.dynaPassword
-postgres_server = config.postgresServer
-postgres_db = config.postgresDBName
-postgres_user = config.postgresUserName
-postgres_password = config.postgresPassword
-
-dynacom_eng = \
-    create_engine(f'mssql+pyodbc://{dyna_user}:{dyna_password}@{dyna_server}/'
-                  f'{dyna_db}?driver=SQL Server')
-postgres_eng = \
-    create_engine(f'postgresql://{postgres_user}:{postgres_password}@'
-                  f'{postgres_server}:5432/{postgres_db}')
+from rq import Retry, Queue
+from rq.job import Job
+from worker import conn
+from tasks import update_scan_confirm
 
 app = Flask(__name__)
-db.init_app(app)
 
 app.config.from_pyfile('config.py', silent=True)
 
-r = redis.Redis()
-q = Queue(connection=r)
-
-
-# POST is unsupported because we don't allow new orders
-@app.route('/orders', methods=['GET', 'OPTIONS'])
-def orders():
-    Session = sessionmaker(bind=postgres_eng)
-    session = Session()
-    if request.method == 'OPTIONS':
-        session.close()
-        response = build_cors_response('')
-        response.headers['Allow'] = 'OPTIONS, GET'
-        return response
-
-    if request.method == 'GET' or 'OPTIONS':
-        # return json for one order
-        _sort = request.args.get('sort')
-        _range = request.args.get('range')
-        _filter = request.args.get('filter')
-
-        result = session.execute("select order_json from dashboard_orders order by id")
-
-        # pull order out of the tuple resultProxy returns
-        js = result_process(result.fetchall())
-        output = js
-        if output:
-            begin = 0
-            end = len(output)
-            total_size = len(output)
-
-            if _filter:
-                pass
-
-            if _sort:
-                sort_args = _sort.strip('][').split(',')
-                rever = False
-                sort_parm = sort_args[0].strip('"')
-                if sort_args[1].strip('"') == 'DESC':
-                    rever = True
-                try:
-                    output = sorted(output, key=lambda x: x[sort_parm], reverse=rever)
-                except KeyError:
-                    print(output[0])
-                    print(f'Key {sort_parm} does not exist')
-
-            if _range:
-                range_args = _range.strip('][').split(',')
-
-                try:    # if begin and end aren't ints, make them 0 and len
-                    begin = int(range_args[0])
-                except TypeError:
-                    begin = 0
-                try:
-                    end = int(range_args[1]) + 1    # end is # of items to
-                except TypeError:                   # return, not list range
-                    end = total_size
-                if end > len(output):  # if range is too long, wrap to max length
-                    end = total_size
-                output = output[begin:end]
-
-            session.close()
-
-            response = build_cors_response(json.dumps(output))
-            response.headers['Content-Range'] = f'orders {begin}-{end}/{total_size}'
-            response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
-            return response
-    session.close()
-    return
-
-
-@app.route('/orders/<int:order_id>', methods=('GET', 'PUT', 'DELETE'))
-def order(order_id):
-    Session = sessionmaker(bind=postgres_eng)
-    session = Session()
-
-    if request.method == 'OPTIONS':
-        response = build_cors_response('')
-        response.headers['Allow'] = 'OPTIONS, GET'
-        session.close()
-        return response
-    if request.method == 'PUT':
-        # updating orders are unsupported for now
-        session.close()
-        return
-    elif request.method == 'DELETE':
-        # deleting orders is unsupported
-        session.close()
-        return
-    elif request.method == 'GET':
-        # return json for one order
-        result = session.execute("select order_json from dashboard_orders where id=':order_id'",
-                                 {'order_id': order_id})
-        session.close()
-        js = result_process(result.fetchone())
-        if js:
-            response = build_cors_response(json.dumps(js))
-            return response
-        else:
-            return build_cors_response('No Data')
-    else:
-        session.close()
-    return build_cors_response('No Data')
-
-
-def result_process(result):
-    if result:
-        if len(result) > 1:
-            return list(map(lambda x: x[0], result))
-        else:
-            return result[0]
-
-
-def build_cors_response(output):
-    response = make_response(output)
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = '*'
-    return response
+q = Queue(connection=conn)
 
 
 # call to update dashboard database
@@ -157,7 +22,7 @@ def build_cors_response(output):
 def order_poll():
     date = '\'2021-03-04\''  # 'getdate()'
 
-    with dynacom_eng.connect() as con:
+    with db.get_dyna_db().connect() as con:
         rs = con.execute(
             f"""select h.invoiid as id, 
                 h.shipvia as ship_via, 
@@ -212,16 +77,169 @@ def order_poll():
             "line_id": line['line_id']
         })
     # update data store with new_orders
-    Session = sessionmaker(bind=postgres_eng)
+    Session = sessionmaker(bind=db.get_db())
     session = Session()
 
     try:
         session.execute('delete from dashboard_orders')
         for item in new_orders:
-            session.execute(f"insert into dashboard_orders values({order['id']}, '{json.dumps(item)}')")
+            session.execute(f"insert into dashboard_orders values({item['id']}, '{json.dumps(item)}')")
         session.commit()
     except exc.SQLAlchemyError as e:
         print(e)
         session.rollback()
     finally:
         session.close()
+
+
+# POST is unsupported because we don't allow new orders
+@app.route('/orders', methods=['GET', 'OPTIONS'])
+def orders():
+    Session = sessionmaker(bind=db.get_db())
+    session = Session()
+    if request.method == 'OPTIONS':
+        session.close()
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS, GET'
+        return response
+
+    if request.method == 'GET' or 'OPTIONS':
+        # return json for one order
+        _sort = request.args.get('sort')
+        _range = request.args.get('range')
+        _filter = request.args.get('filter')
+
+        result = session.execute("select order_json from dashboard_orders order by id")
+
+        # pull order out of the tuple resultProxy returns
+        js = result_process(result.fetchall())
+        output = js
+        if output:
+            begin = 0
+            end = len(output)
+            total_size = len(output)
+
+            if _filter:
+                pass
+
+            if _sort:
+                sort_args = _sort.strip('][').split(',')
+                rever = False
+                sort_parm = sort_args[0].strip('"')
+                if sort_args[1].strip('"') == 'DESC':
+                    rever = True
+                try:
+                    output = sorted(output, key=lambda x: x[sort_parm], reverse=rever)
+                except KeyError:
+                    print(output[0])
+                    print(f'Key {sort_parm} does not exist')
+
+            if _range:
+                range_args = _range.strip('][').split(',')
+
+                try:  # if begin and end aren't ints, make them 0 and len
+                    begin = int(range_args[0])
+                except TypeError:
+                    begin = 0
+                try:
+                    end = int(range_args[1]) + 1  # end is # of items to
+                except TypeError:  # return, not list range
+                    end = total_size
+                if end > len(output):  # if range is too long, wrap to max length
+                    end = total_size
+                output = output[begin:end]
+
+            session.close()
+
+            response = build_cors_response(output)
+            response.headers['Content-Range'] = f'orders {begin}-{end}/{total_size}'
+            response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
+            return response
+    session.close()
+    return
+
+
+@app.route('/orders/<int:order_id>', methods=['GET', 'PUT', 'DELETE'])
+def order(order_id):
+    Session = sessionmaker(bind=db.get_db())
+    session = Session()
+
+    if request.method == 'OPTIONS':
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS, GET'
+        session.close()
+        return response
+    if request.method == 'PUT':
+        # updating orders are unsupported for now
+        session.close()
+        return
+    elif request.method == 'DELETE':
+        # deleting orders is unsupported
+        session.close()
+        return
+    elif request.method == 'GET':
+        # return json for one order
+        result = session.execute("select order_json from dashboard_orders where id=':order_id'",
+                                 {'order_id': order_id})
+        session.close()
+        js = result_process(result.fetchone())
+        if js:
+            response = build_cors_response(js)
+            return response
+        else:
+            return build_cors_response('No Data')
+    else:
+        session.close()
+    return build_cors_response('No Data')
+
+
+@app.route('/scan_confirm', methods=['GET', 'PUT', 'OPTIONS'])
+def scan_confirms():
+    if request.method == 'OPTIONS':
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS, GET, PUT'
+        return response
+
+    if request.method == 'PUT':
+        try:
+            upc = request.form['upc_code']
+            order_id = request.form['order_id']
+        except KeyError:
+            return build_cors_response(f"Invalid input: {request.json}. "
+                                       f"Please input a UPC code and order id")
+
+        job = q.enqueue_call(
+            func=update_scan_confirm, args=(upc, order_id), result_ttl=86400,
+            retry=Retry(max=3, interval=60)
+        )
+        return build_cors_response(job.get_id())
+
+    if request.method == 'GET':
+        # TODO: Return list of all jobs
+        return build_cors_response('')
+
+
+@app.route('/scan_confirm/<job_key>', methods=['GET'])
+def scan_confirm(job_key):
+    job = Job.fetch(job_key, connection=conn)
+
+    if job.is_finished:
+        return str(job.result), 200
+    else:
+        return "Error on job", 202
+
+
+def result_process(result):
+    if result:
+        if len(result) > 1:
+            return list(map(lambda x: x[0], result))
+        else:
+            return result[0]
+
+
+def build_cors_response(output):
+    response = jsonify(output)
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = '*'
+    return response
