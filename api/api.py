@@ -1,6 +1,6 @@
 # TODO: better CORS support
 # TODO: support filtering in /orders
-from flask import Flask, request, make_response, jsonify
+from flask import Flask, request, jsonify
 import json
 import db
 from sqlalchemy import exc
@@ -155,6 +155,11 @@ def orders():
             response.headers['Content-Range'] = f'orders {begin}-{end}/{total_size}'
             response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
             return response
+        else:
+            response = build_cors_response([{'id': 0}])
+            response.headers['Content-Range'] = 'orders 0-0/0'
+            response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
+            return response
     session.close()
     return
 
@@ -216,7 +221,66 @@ def scan_confirms():
 
     if request.method == 'GET':
         # TODO: Return list of all jobs
-        return build_cors_response('')
+        _sort = request.args.get('sort')
+        _range = request.args.get('range')
+        _filter = request.args.get('filter')
+        job_ids = q.finished_job_registry.get_job_ids()
+        job_ids += q.started_job_registry.get_job_ids()
+        job_ids += q.deferred_job_registry.get_job_ids()
+        job_ids += q.failed_job_registry.get_job_ids()
+        job_ids += q.scheduled_job_registry.get_job_ids()
+        output = []
+        job_count = 0
+        for job in job_ids:
+            output.append({'id': job_count, 'job_no': job})
+            job_count += 1
+
+        if output:
+            begin = 0
+            end = len(output)
+            total_size = len(output)
+
+            if _filter:
+                pass
+
+            if _sort:
+
+                sort_args = _sort.strip('][').split(',')
+                rever = False
+                sort_parm = sort_args[0].strip('"')
+                if sort_args[1].strip('"') == 'DESC':
+                    rever = True
+                try:
+                    output = sorted(output, key=lambda x: x['id'], reverse=rever)
+                except KeyError:
+                    print(output[0])
+                    print(f'Key {sort_parm} does not exist')
+
+            if _range:
+                range_args = _range.strip('][').split(',')
+
+                try:  # if begin and end aren't ints, make them 0 and len
+                    begin = int(range_args[0])
+                except TypeError:
+                    begin = 0
+                try:
+                    end = int(range_args[1]) + 1  # end is # of items to
+                except TypeError:  # return, not list range
+                    end = total_size
+                if end > len(output):  # if range is too long, wrap to max length
+                    end = total_size
+                output = output[begin:end]
+
+            response = build_cors_response(output)
+            response.headers['Content-Range'] = f'orders {begin}-{end}/{total_size}'
+            response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
+
+            return response
+        else:
+            response = build_cors_response([{'id': 0}])
+            response.headers['Content-Range'] = 'orders 0-0/0'
+            response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
+            return response
 
 
 @app.route('/scan_confirm/<job_key>', methods=['GET'])

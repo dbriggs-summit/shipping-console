@@ -66,9 +66,9 @@ def get_dyna_db():
 
 def get_db():
     """
-        Create PostgreSQL DB engine outside the app context, for worker and
-        scheduled tasks. Returns sqlalchemy engine
-        """
+    Create PostgreSQL DB engine outside the app context, for worker and
+    scheduled tasks. Returns sqlalchemy engine
+    """
     postgres_server = config.postgresServer
     postgres_db = config.postgresDBName
     postgres_user = config.postgresUserName

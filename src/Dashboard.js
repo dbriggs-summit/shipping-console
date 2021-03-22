@@ -29,7 +29,7 @@ const Dashboard = () => {
         const {data}  = await dataProvider.getList(
           'orders',
             {
-                pagination: { page: 1, perPage: 999},
+                pagination: { page: 1, perPage: 9999},
                 sort: { field: 'id', order: 'DESC'},
                 filter: {},
             }
@@ -62,7 +62,7 @@ const Dashboard = () => {
                     ship_vias: []
                 }
             );
-        console.log(aggregations.ship_vias);
+        //console.log(aggregations.ship_vias);
         setState(state => ({
             ...state,
             data,

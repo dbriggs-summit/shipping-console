@@ -38,8 +38,7 @@ def update_scan_confirm(upc, order_id):
             total_lines += 1
 
             if line['cancelled'] == 1:
-                errors.append('Order cancelled, DO NOT SHIP')
-                break
+                raise CancelledOrderException(order_id)
 
             if line['qty'] > line['qty_scanned']:
                 session.execute(
@@ -64,7 +63,7 @@ def update_scan_confirm(upc, order_id):
         else:
             errors.append('All lines have already been scanned on this order')
 
-        if total_lines == complete_lines:
+        if total_lines == complete_lines and total_lines > 0:
             # if all lines are complete, mark it ready to ship
             print(order_id)
             session.execute(
@@ -80,7 +79,7 @@ def update_scan_confirm(upc, order_id):
         session.commit()  # Commit together so we don't have state where all
         # lines are complete but order isn't Ready to Ship
 
-    except exc.SQLAlchemyError as e:
+    except (exc.SQLAlchemyError, ValueError, CancelledOrderException) as e:
         print(e)
         errors.append(e)
         session.rollback()
@@ -90,3 +89,12 @@ def update_scan_confirm(upc, order_id):
         return {"error": errors}
     else:
         return {"result": 'Scan successful'}
+
+
+class CancelledOrderException(Exception):
+    def __init__(self, order_no):
+        self.order_no = order_no
+        self.message = f'Order # {self.order_no} has been cancelled. DO NOT SHIP'
+
+    def __str__(self):
+        return self.message
