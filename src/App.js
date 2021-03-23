@@ -9,8 +9,8 @@ const dataProvider = simpleRestProvider('http://127.0.0.1:5000/');
 const App = () => (
     <Admin customRoutes={customRoutes} layout={MyLayout} dataProvider={dataProvider} dashboard={Dashboard}
            disableTelemetry>
-        <Resource name="orders" list={ListGuesser} edit={EditGuesser} />
-        <Resource name="scan_confirm" list={ListGuesser} edit={EditGuesser} />
+        <Resource name="orders" list={ListGuesser} edit={EditGuesser} options={{ label: "Orders" }} />
+        <Resource name="scan_confirm" list={ListGuesser} edit={EditGuesser} options={{ label: "Scan Confirm" }} />
     </Admin>
 );
 
