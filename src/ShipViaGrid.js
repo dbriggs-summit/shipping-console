@@ -1,8 +1,14 @@
 import * as React from "react";
 import { DataGrid } from '@material-ui/data-grid';
+import { Link, Redirect } from 'react-router-dom';
 
 const columns = [
-    {field: 'ship_via', headerName: 'Ship Via', width: 210},
+    {field: 'ship_via', headerName: 'Ship Via', width: 210,
+    renderCell: (params) =>  (<Link to={{
+                        pathname: "/orders",
+                        search: `filter=${JSON.stringify({ ship_via: params.getValue("ship_via")})}`
+    }} style={{ textDecoration: 'none', color: 'inherit', }}>{params.getValue("ship_via")}</Link>)
+    },
     {field: 'total_orders', headerName: 'Total Orders', type: 'number', width: 145},
     {field: 'open_orders', headerName: 'Open Orders', type: 'number', width: 145},
     {field: 'closed_orders', headerName: 'Ready to Ship', type: 'number', width: 145},
@@ -30,7 +36,9 @@ const ShipViaGrid = props => {
         },  []
     ));
 
-    return <DataGrid rows={ship_via_grid} columns={columns} autoHeight="true" />;
+    return (
+        <DataGrid rows={ship_via_grid} columns={columns} autoHeight="true" hideFooter="true" onRowClick={() => {return (<Redirect to="/orders" />)}} />
+    );
 };
 
 export default ShipViaGrid;

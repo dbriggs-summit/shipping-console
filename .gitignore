@@ -27,3 +27,4 @@ __pycache__
 /api/config.py
 
 /.idea
+/yarn.lock

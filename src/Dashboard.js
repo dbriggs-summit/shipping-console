@@ -1,5 +1,4 @@
 import React, {useState, useEffect, useCallback, CSSProperties} from "react";
-import { Card, CardContent, CardHeader } from '@material-ui/core';
 import { useVersion, useDataProvider } from 'react-admin';
 import OrderCard from "./OrderCard";
 import EventIcon from '@material-ui/icons/Event';
@@ -39,7 +38,7 @@ const Dashboard = () => {
                 (stats, order) => {
 
                     if(order.ship_via in stats.ship_vias === false) {
-                        stats.ship_vias[order.ship_via] = new Array(order.ship_via,0,0,0);
+                        stats.ship_vias[order.ship_via] = [order.ship_via,0,0,0];
                     }
 
                     if (order.status === 'Open') {
@@ -90,11 +89,22 @@ const Dashboard = () => {
             <div style={styles.leftCol}>
                 <div style={styles.flex}>
                     <Title title="Shipping Console" />
-                    <OrderCard value={all_orders} title="Total Orders" icon={EventIcon} />
+                    <OrderCard value={all_orders} title="Total Orders" to={{
+                        pathname: "/orders"
+                    }}
+                               icon={EventIcon} />
                     <Spacer />
-                    <OrderCard value={open_orders} title="Open Orders" icon={ArrowDropDownCircleIcon} />
+                    <OrderCard value={open_orders} title="Open Orders" to={{
+                        pathname: "/orders",
+                        search: `filter=${JSON.stringify({ status: 'Open'})}`
+                    }}
+                               icon={ArrowDropDownCircleIcon} />
                     <Spacer />
-                    <OrderCard value={closed_orders} title="Closed Orders" icon={CheckCircleIcon} />
+                    <OrderCard value={closed_orders} title="Closed Orders" to={{
+                        pathname: "/orders",
+                        search: `filter=${JSON.stringify({ status: 'Closed'})}`
+                    }}
+                               icon={CheckCircleIcon} />
                 </div>
                 <VerticalSpacer />
                 <ShipViaGrid value={ship_vias} />

@@ -9,7 +9,7 @@ select h.invoiid as id,
 	w.WarehouseId as ship_from,
 	case when x04472474_BLStatus is NULL then 'Open'
 		when x04472474_BLStatus = 'Ready to Ship' then 'Closed'
-		--when  then 'Cancelled'
+		when x04472474_PendingCancellation = 1  then 'Cancelled'
 		end as "status",
 	d.Qty as qty,
 	d.usrBarcodeScanCount as qty_scanned,
@@ -21,4 +21,4 @@ inner join Item i on d.ExItemId = i.InItemId
 inner join Warehouse w on d.usrShipFromWarehouse = w.InWarehouseId
 where h.[x04472474_ShippedDate] = '2021-03-04' AND h.[InvoiType] = 51 AND 
 	d.[usrShipFromWarehouse] = 4 AND h.[x04472474_Shipped] = 1 AND h.[ShipVia] != '' 
-	and i.itemid not in ('j4g','j5u','x1','j4')
+	and i.itemid not in ('j4g','j5u','x1','j4', 'j8')

@@ -35,7 +35,7 @@ def order_poll():
                 w.WarehouseId as ship_from,
                 case when x04472474_BLStatus is NULL then 'Open'
                     when x04472474_BLStatus = 'Ready to Ship' then 'Closed'
-                    --when  then 'Cancelled'
+                    when x04472474_PendingCancellation = 1  then 'Cancelled'
                     end as 'status',
                 d.Qty as qty,
                 d.usrBarcodeScanCount as qty_scanned,
@@ -47,7 +47,7 @@ def order_poll():
             inner join Warehouse as w on d.usrShipFromWarehouse = w.InWarehouseId
             where h.[x04472474_ShippedDate] = {date} AND h.[InvoiType] = 51 AND 
                 d.[usrShipFromWarehouse] = 4 AND h.[x04472474_Shipped] = 1 AND 
-                h.[ShipVia] != '' and i.itemid not in ('j4g','j5u','x1','j4')
+                h.[ShipVia] != '' and i.itemid not in ('j4g','j5u','x1','j4', 'j8')
         """).fetchall()
 
     new_orders = []
@@ -120,10 +120,20 @@ def orders():
             total_size = len(output)
 
             if _filter:
-                pass
+                str_filter = list(map(lambda x: x.strip('"'), _filter.strip('}{').split(':')))
+                print(str_filter)
+                try:
+                    name = str_filter[0]
+                    values = str_filter[1]
+                # filter_dict = {}
+                    output = list(filter(lambda x: x[name] == values, output))
+                    end = len(output)
+                    total_size = len(output)
+                except (KeyError, IndexError):
+                    pass
 
             if _sort:
-                sort_args = _sort.strip('][').split(',')
+                sort_args = _sort.strip('][').strip('"').split(',')
                 rever = False
                 sort_parm = sort_args[0].strip('"')
                 if sort_args[1].strip('"') == 'DESC':
@@ -209,6 +219,16 @@ def scan_confirms():
         try:
             upc = request.form['upc_code']
             order_id = request.form['order_id']
+            Session = sessionmaker(bind=db.get_db())
+            session = Session()
+            result = session.execute("select order_json from dashboard_orders where id=:order_id",
+                                     {'order_id': order_id.strip('"')})
+            session.close()
+            js = result_process(result.fetchone())
+            print(js)
+            if js:
+                if js['status'] == 'Cancelled':
+                    raise Exception
         except KeyError:
             return build_cors_response(f"Invalid input: {request.json}. "
                                        f"Please input a UPC code and order id")
