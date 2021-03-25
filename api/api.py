@@ -9,9 +9,13 @@ from rq import Retry, Queue
 from rq.job import Job
 from worker import conn
 from tasks import update_scan_confirm
+from exceptions import CancelledOrderException
+from logging.config import dictConfig
+import config
 
 app = Flask(__name__)
 
+dictConfig(config.log_config)
 app.config.from_pyfile('config.py', silent=True)
 
 q = Queue(connection=conn)
@@ -86,7 +90,7 @@ def order_poll():
             session.execute(f"insert into dashboard_orders values({item['id']}, '{json.dumps(item)}')")
         session.commit()
     except exc.SQLAlchemyError as e:
-        print(e)
+        logging.error(e)
         session.rollback()
     finally:
         session.close()
@@ -121,7 +125,6 @@ def orders():
 
             if _filter:
                 str_filter = list(map(lambda x: x.strip('"'), _filter.strip('}{').split(':')))
-                print(str_filter)
                 try:
                     name = str_filter[0]
                     values = str_filter[1]
@@ -141,8 +144,7 @@ def orders():
                 try:
                     output = sorted(output, key=lambda x: x[sort_parm], reverse=rever)
                 except KeyError:
-                    print(output[0])
-                    print(f'Key {sort_parm} does not exist')
+                    logging.error(f'Key {sort_parm} does not exist')
 
             if _range:
                 range_args = _range.strip('][').split(',')
@@ -225,11 +227,10 @@ def scan_confirms():
                                      {'order_id': order_id.strip('"')})
             session.close()
             js = result_process(result.fetchone())
-            print(js)
             if js:
                 if js['status'] == 'Cancelled':
-                    raise Exception
-        except KeyError:
+                    raise CancelledOrderException
+        except (KeyError, CancelledOrderException):
             return build_cors_response(f"Invalid input: {request.json}. "
                                        f"Please input a UPC code and order id")
 
@@ -273,8 +274,7 @@ def scan_confirms():
                 try:
                     output = sorted(output, key=lambda x: x['id'], reverse=rever)
                 except KeyError:
-                    print(output[0])
-                    print(f'Key {sort_parm} does not exist')
+                    logging.error(f'Key {sort_parm} does not exist')
 
             if _range:
                 range_args = _range.strip('][').split(',')

@@ -1,6 +1,9 @@
 import db
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import exc
+from exceptions import CancelledOrderException, OrderDoesNotExistException
+import logging
+from logging.config import dictConfig
 
 
 def update_scan_confirm(upc, order_id):
@@ -11,6 +14,26 @@ def update_scan_confirm(upc, order_id):
     :return:
     """
     errors = []
+
+    dictConfig({
+        'version': 1,
+        'formatters': {'default': {
+            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+        }},
+        'handlers': {
+            'file': {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'formatter': 'default',
+                'filename': 'tasklogs.log',
+                'maxBytes': 512000,
+                'backupCount': 3
+            }
+        },
+        'root': {
+            'level': 'INFO',
+            'handlers': ['file']
+        }
+    })
 
     Session = sessionmaker(bind=db.get_dyna_db())
     session = Session()
@@ -81,7 +104,7 @@ def update_scan_confirm(upc, order_id):
 
     except (exc.SQLAlchemyError, ValueError, CancelledOrderException,
             OrderDoesNotExistException) as e:
-        print(e)
+        logging.error(e)
         errors.append(e)
         session.rollback()
     finally:
@@ -90,21 +113,3 @@ def update_scan_confirm(upc, order_id):
         return {"error": errors}
     else:
         return {"result": 'Scan successful'}
-
-
-class CancelledOrderException(Exception):
-    def __init__(self, order_no):
-        self.order_no = order_no
-        self.message = f'Order # {self.order_no} has been cancelled. DO NOT SHIP'
-
-    def __str__(self):
-        return self.message
-
-
-class OrderDoesNotExistException(Exception):
-    def __init__(self, order_no):
-        self.order_no = order_no
-        self.message = f'Order # {self.order_no} does not exist, or all lines have already been scanned'
-
-    def __str__(self):
-        return self.message

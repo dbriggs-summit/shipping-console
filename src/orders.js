@@ -5,7 +5,7 @@ import { List, Edit, Datagrid, TextField, ArrayField, ReferenceField,
 
 export const OrderList = props => (
     <List {...props}>
-        <Datagrid rowClick="edit">
+        <Datagrid optimized rowClick="edit">
             <TextField source="id" />
             <ArrayField source="lines"><SingleFieldList><ChipField source="item_id" /></SingleFieldList></ArrayField>
             <ReferenceField source="order_id" reference="orders"><TextField source="id" /></ReferenceField>

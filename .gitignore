@@ -28,3 +28,4 @@ __pycache__
 
 /.idea
 /yarn.lock
+/api/apilogs.log

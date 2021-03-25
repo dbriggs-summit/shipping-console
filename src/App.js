@@ -11,8 +11,11 @@ const App = () => (
     <Admin customRoutes={customRoutes} layout={MyLayout} dataProvider={dataProvider} dashboard={Dashboard}
            disableTelemetry>
         <Resource name="orders" list={OrderList} edit={OrderEdit} options={{ label: "Orders" }} />
-        <Resource name="scan_confirm" list={ListGuesser} edit={EditGuesser} options={{ label: "Scan Confirm" }} />
     </Admin>
 );
 
 export default App;
+
+/*
+        <Resource name="scan_confirm" list={ListGuesser} edit={EditGuesser} options={{ label: "Scan Confirm" }} />
+ */

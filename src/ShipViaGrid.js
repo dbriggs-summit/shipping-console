@@ -1,21 +1,26 @@
 import * as React from "react";
 import { DataGrid } from '@material-ui/data-grid';
-import { Link, Redirect } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 const columns = [
-    {field: 'ship_via', headerName: 'Ship Via', width: 210,
-    renderCell: (params) =>  (<Link to={{
-                        pathname: "/orders",
-                        search: `filter=${JSON.stringify({ ship_via: params.getValue("ship_via")})}`
-    }} style={{ textDecoration: 'none', color: 'inherit', }}>{params.getValue("ship_via")}</Link>)
-    },
+    {field: 'ship_via', headerName: 'Ship Via', width: 210},
     {field: 'total_orders', headerName: 'Total Orders', type: 'number', width: 145},
     {field: 'open_orders', headerName: 'Open Orders', type: 'number', width: 145},
     {field: 'closed_orders', headerName: 'Ready to Ship', type: 'number', width: 145},
 ];
 
+
+
 const ShipViaGrid = props => {
     const {...ship_vias} = props;
+    const history = useHistory();
+    function handleClick(rowData) {
+        console.log(rowData.row.ship_via);
+        history.push({
+                        pathname: "/orders",
+                        search: `filter=${JSON.stringify({ ship_via: rowData.row.ship_via})}`
+    });
+    };
     const ship_via_grid = (ship_vias.value === undefined ?
         [{'id': 0,
         'ship_via': '',
@@ -37,7 +42,7 @@ const ShipViaGrid = props => {
     ));
 
     return (
-        <DataGrid rows={ship_via_grid} columns={columns} autoHeight="true" hideFooter="true" onRowClick={() => {return (<Redirect to="/orders" />)}} />
+        <DataGrid rows={ship_via_grid} columns={columns} autoHeight="true" hideFooter="true" onRowClick={handleClick} />
     );
 };
 
