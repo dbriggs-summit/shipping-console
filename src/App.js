@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Admin, Resource, ListGuesser, EditGuesser} from 'react-admin';
+import {Admin, Resource} from 'react-admin';
 import simpleRestProvider from 'ra-data-simple-rest';
 import Dashboard from "./Dashboard";
 import MyLayout from "./MyLayout";
