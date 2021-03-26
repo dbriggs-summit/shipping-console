@@ -76,6 +76,7 @@ def get_db():
     postgres_eng = \
         create_engine(f'postgresql://{postgres_user}:{postgres_password}@'
                       f'{postgres_server}:5432/{postgres_db}')
+
     return postgres_eng
 
 """

@@ -11,6 +11,7 @@ from worker import conn
 from tasks import update_scan_confirm
 from exceptions import CancelledOrderException
 from logging.config import dictConfig
+import logging
 import config
 
 app = Flask(__name__)
