@@ -10,7 +10,6 @@ export const OrderList = props => (
             <ArrayField source="lines"><SingleFieldList><ChipField source="item_id" /></SingleFieldList></ArrayField>
             <ReferenceField source="order_id" reference="orders"><TextField source="id" /></ReferenceField>
             <TextField source="status" />
-            <DateField source="ship_date" />
             <TextField source="ship_via" />
         </Datagrid>
     </List>
