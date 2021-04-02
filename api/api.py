@@ -129,7 +129,7 @@ def orders():
                 try:
                     name = str_filter[0]
                     values = str_filter[1]
-                # filter_dict = {}
+                    # filter_dict = {}
                     output = list(filter(lambda x: x[name] == values, output))
                     end = len(output)
                     total_size = len(output)
@@ -312,6 +312,42 @@ def scan_confirm(job_key):
         return str(job.result), 200
     else:
         return "Error on job", 202
+
+
+@app.route('/order_status', methods=['GET'])
+def order_status():
+    po_num = request.args.get('po')
+    shipto_zip = request.args.get('shipto_zip')
+    print(po_num)
+    print(shipto_zip)
+    with db.get_dyna_db().connect() as con:
+        rs = con.execute('''
+        SELECT
+            ShipVia as ship_via,
+            CASE InvoiType WHEN 51 THEN '' ELSE ShipDate END AS ship_date,
+            ShipTo as ship_to,
+            PONum as po_num,
+            TrackingNo as tracking_num
+        FROM InvoiHdr
+        WHERE
+            InvoiType IN (1, 51)
+            AND PONum = ? --{po}
+            AND usrZipcodes = ?
+            ''', po_num, shipto_zip).fetchall()
+    order_list = []
+    print(rs)
+    for line in rs:
+        order_list.append({  # insert header record
+            "poNum": line['po_num'],
+            "shipTo": line['ship_to'],
+            "shipVia": line['ship_via'],
+            "shipDate": line['ship_date'].strftime("%Y-%m-%d") if line['ship_date'] != '' else '',
+            "trackingNo": line['tracking_num']
+        })
+    if order_list:
+        return build_cors_response({'orders': order_list})
+    else:
+        return build_cors_response({'orders': ''})
 
 
 def result_process(result):
