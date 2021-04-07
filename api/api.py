@@ -231,7 +231,8 @@ def scan_confirms():
             if js:
                 if js['status'] == 'Cancelled':
                     raise CancelledOrderException
-        except (KeyError, CancelledOrderException):
+        except (KeyError, CancelledOrderException) as e:
+            logging.error(e)
             return build_cors_response(f"Invalid input: {request.json}. "
                                        f"Please input a UPC code and order id")
 
@@ -318,8 +319,6 @@ def scan_confirm(job_key):
 def order_status():
     po_num = request.args.get('po')
     shipto_zip = request.args.get('shipto_zip')
-    print(po_num)
-    print(shipto_zip)
     with db.get_dyna_db().connect() as con:
         rs = con.execute('''
         SELECT
@@ -335,7 +334,6 @@ def order_status():
             AND usrZipcodes = ?
             ''', po_num, shipto_zip).fetchall()
     order_list = []
-    print(rs)
     for line in rs:
         order_list.append({  # insert header record
             "poNum": line['po_num'],
