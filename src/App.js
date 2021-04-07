@@ -6,7 +6,7 @@ import MyLayout from "./MyLayout";
 import customRoutes from "./customRoutes";
 import { OrderEdit, OrderList } from "./orders";
 
-const dataProvider = simpleRestProvider('http://127.0.0.1:5000/');
+const dataProvider = simpleRestProvider('http://10.30.30.13:8000/');
 const App = () => (
     <Admin customRoutes={customRoutes} layout={MyLayout} dataProvider={dataProvider} dashboard={Dashboard}
            disableTelemetry>
