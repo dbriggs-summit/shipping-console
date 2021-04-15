@@ -6,7 +6,7 @@ const columns = [
     {field: 'ship_via', headerName: 'Ship Via', width: 210},
     {field: 'total_orders', headerName: 'Total Orders', type: 'number', width: 145},
     {field: 'open_orders', headerName: 'Open Orders', type: 'number', width: 145},
-    {field: 'closed_orders', headerName: 'Ready to Ship', type: 'number', width: 145},
+    {field: 'closed_orders', headerName: 'Closed Orders', type: 'number', width: 145},
 ];
 
 
@@ -15,7 +15,7 @@ const ShipViaGrid = props => {
     const {...ship_vias} = props;
     const history = useHistory();
     function handleClick(rowData) {
-        console.log(rowData.row.ship_via);
+        //console.log(rowData.row.ship_via);
         history.push({
                         pathname: "/orders",
                         search: `filter=${JSON.stringify({ ship_via: rowData.row.ship_via})}`

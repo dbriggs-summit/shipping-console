@@ -10,16 +10,19 @@ function handleErrors(response) {
     return response;
 }
 
+
+
 const ScanLabels = () => {
   //const result = 'No result';
   //const update = useScan;
     const dispatch = useDispatch();
-    const redirect = useRedirect();
+    //const redirect = useRedirect();
     const notify = useNotify();
     const [loading, setLoading] = useState(false);
     const handleScan = (data) => {
         if(!data.startsWith("w") || data.split(" ").length !== 3) {
-            notify('Please enter a valid matrix label', 'warning')
+            notify('Please enter a valid matrix label', 'warning',
+                {},false, 5000)
         }
         else {
             const words = data.split(" ");
@@ -31,12 +34,15 @@ const ScanLabels = () => {
             newScan.append('upc_code', upc_code);
             newScan.append('order_id', order_id);
             fetch(`http://10.30.30.13:8000/scan_confirm`, { method: 'PUT', body: newScan })
+            //fetch(`/scan_confirm`, { method: 'PUT', body: newScan })
                 .then(handleErrors)
                 .then(() => {
-                    notify('Scan Successful: ' + upc_code + ' for order # ' + order_id);
+                    notify('Scan Successful: ' + upc_code + ' for order # ' + order_id,
+                        'info',{},false, 5000);
                 })
                 .catch((e) => {
-                    notify('Error: Problem with scan: ' + e,'warning')
+                    notify('Error: Problem with scan: ' + e,'warning',
+                        {},false, 5000)
                 })
                 .finally(() => {
                     setLoading(false);

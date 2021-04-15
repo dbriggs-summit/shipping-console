@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, CSSProperties} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import { useVersion, useDataProvider } from 'react-admin';
 import OrderCard from "./OrderCard";
 import EventIcon from '@material-ui/icons/Event';
