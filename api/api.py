@@ -222,6 +222,7 @@ def scan_confirms():
         try:
             upc = request.form['upc_code']
             order_id = request.form['order_id']
+            logging.info('Order %s scanned, upc %s',order_id, upc)
             Session = sessionmaker(bind=db.get_db())
             session = Session()
             result = session.execute("select order_json from dashboard_orders where id=:order_id",
