@@ -255,7 +255,8 @@ def scan_confirms():
         output = []
         job_count = 0
         for job in job_ids:
-            output.append({'id': job_count, 'job_no': job})
+            job_data = Job.fetch(job, connection=conn)
+            output.append({'id': job_count, 'job_no': job, 'order': job_data.args[1], 'upc': job_data.args[0]})
             job_count += 1
 
         if output:
