@@ -88,7 +88,7 @@ def update_scan_confirm(upc, order_id):
 
         if total_lines == complete_lines and total_lines > 0:
             # if all lines are complete, mark it ready to ship
-            print(order_id)
+            logging.info('Order %s is ready to ship', order_id)
             session.execute(
                 '''
                 update invoihdr 

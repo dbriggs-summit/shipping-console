@@ -310,7 +310,7 @@ def scan_confirm(job_key):
     job = Job.fetch(job_key, connection=conn)
 
     if job.is_finished:
-        return str(job.result), 200
+        return jsonify({'result': str(job.result), 'args': job.args}), 200
     else:
         return "Error on job", 202
 
