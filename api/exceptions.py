@@ -15,3 +15,12 @@ class OrderDoesNotExistException(Exception):
 
     def __str__(self):
         return self.message
+
+
+class InvalidStatusException(Exception):
+    def __init__(self, status):
+        self.status = status
+        self.message = f'Status {self.status} is invalid. Please enter a valid status'
+
+    def __str__(self):
+        return self.message

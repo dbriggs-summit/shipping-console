@@ -1,20 +1,12 @@
 import db
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import exc
-from exceptions import CancelledOrderException, OrderDoesNotExistException
+from exceptions import CancelledOrderException, OrderDoesNotExistException, InvalidStatusException
 import logging
 from logging.config import dictConfig
 
 
-def update_scan_confirm(upc, order_id):
-    """
-
-    :param upc: string. upc code of item to scan
-    :param order_id: string. order of item scanned
-    :return:
-    """
-    errors = []
-
+def activate_logging():
     dictConfig({
         'version': 1,
         'formatters': {'default': {
@@ -34,6 +26,18 @@ def update_scan_confirm(upc, order_id):
             'handlers': ['file']
         }
     })
+
+
+def update_scan_confirm(upc, order_id):
+    """
+
+    :param upc: string. upc code of item to scan
+    :param order_id: string. order of item scanned
+    :return:
+    """
+    errors = []
+
+    activate_logging()
 
     Session = sessionmaker(bind=db.get_dyna_db())
     session = Session()
@@ -92,7 +96,7 @@ def update_scan_confirm(upc, order_id):
             session.execute(
                 '''
                 update invoihdr 
-                set x04472474_BLStatus = 'Ready to Ship'
+                set x04472474_BLStatus = 'Closed'
                 from
                 invoihdr
                 where invoiid = :order_id
@@ -113,3 +117,61 @@ def update_scan_confirm(upc, order_id):
         return {"error": errors}
     else:
         return {"result": 'Scan successful'}
+
+
+def update_order_status(order_id, order_status):
+    """
+
+    :param order_id: string. order to change
+    :param order_status: string. can be 'Open', 'Closed', or 'Cancelled'
+    :return:
+    """
+    errors = []
+
+    # activate_logging()
+
+    Session = sessionmaker(bind=db.get_dyna_db())
+    session = Session()
+    try:
+        result = session.execute('''
+            select
+                isnull(h.x04472474_BLStatus, '') as status,
+                isnull(h.x04472474_PendingCancellation, '') as cancelled,
+                h.invoiid order_id
+            from invoihdr h 
+            where invoiid = :order_id
+            ''', {'order_id': order_id})
+        # session.commit() causes errors on SQL Server calls
+
+        try:
+            for line in result.fetchall():
+                if order_status == 'Cancelled':
+                    pass    # Don't support cancelling at the moment
+                elif order_status == 'Open' or order_status == 'Closed':
+                    if line['status'] != order_status:
+                        session.execute(
+                            '''
+                            update invoihdr 
+                            set x04472474_BLStatus = :order_status
+                            from
+                            invoihdr
+                            where invoiid = :order_id
+                            ''',
+                            {'order_id': order_id, 'order_status': order_status})
+                        session.commit()
+                else:
+                    raise InvalidStatusException(order_status)
+        except KeyError:
+            raise OrderDoesNotExistException(order_id)
+
+    except (exc.SQLAlchemyError, ValueError, CancelledOrderException,
+            OrderDoesNotExistException) as e:
+        logging.error(e)
+        errors.append(e)
+        session.rollback()
+    finally:
+        session.close()
+    if len(errors) > 0:
+        return {"error": errors}
+    else:
+        return {"id": order_id, "status": order_status}
