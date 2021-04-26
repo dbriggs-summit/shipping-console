@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from rq import Retry, Queue
 from rq.job import Job
 from worker import conn
-from tasks import update_scan_confirm
+from tasks import update_scan_confirm, update_order_status
 from exceptions import CancelledOrderException
 from logging.config import dictConfig
 import logging
@@ -25,7 +25,13 @@ q = Queue(connection=conn)
 # call to update dashboard database
 @app.cli.command()
 def order_poll():
-    date = 'cast(getdate() as date)'  # '\'2021-03-04\''
+    try:
+        if config.mode == 'development':
+            date = '\'2021-03-04\''
+        else:
+            date = 'cast(getdate() as date)'
+    except KeyError:
+        date = 'cast(getdate() as date)'
 
     with db.get_dyna_db().connect() as con:
         rs = con.execute(
@@ -38,9 +44,10 @@ def order_poll():
                     when h.invoitype = 51 then 'Open'
                     else 'Unknown' end as order_type,
                 w.WarehouseId as ship_from,
-                case when x04472474_BLStatus is NULL then 'Open'
-                    when x04472474_BLStatus = 'Ready to Ship' then 'Closed'
-                    when x04472474_PendingCancellation = 1  then 'Cancelled'
+                case when x04472474_PendingCancellation = 1  then 'Cancelled'
+                    when (x04472474_BLStatus is NULL or 
+                    (x04472474_BLStatus <> 'Ready to Ship' and x04472474_BLStatus <> 'Closed')) then 'Open'
+                    when (x04472474_BLStatus = 'Closed' or x04472474_BLStatus = 'Ready to Ship') then 'Closed'
                     end as 'status',
                 d.Qty as qty,
                 d.usrBarcodeScanCount as qty_scanned,
@@ -177,20 +184,60 @@ def orders():
     return
 
 
-@app.route('/orders/<int:order_id>', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/orders/<int:order_id>', methods=['GET', 'PUT', 'OPTIONS', 'DELETE'])
 def order(order_id):
     Session = sessionmaker(bind=db.get_db())
     session = Session()
-
+    # print(f'Calling {request.method}')
     if request.method == 'OPTIONS':
         response = build_cors_response('')
-        response.headers['Allow'] = 'OPTIONS, GET'
+        response.headers['Allow'] = 'OPTIONS, GET, PUT'
         session.close()
         return response
     if request.method == 'PUT':
-        # updating orders are unsupported for now
-        session.close()
-        return
+        try:
+            status = request.json['status']
+            order_id = request.json['order_id'].strip('"')
+            logging.info('Changing status on order %s to %s', order_id, status)
+            result = session.execute("select order_json from dashboard_orders where id=:order_id",
+                                     {'order_id': order_id})
+
+            js = result_process(result.fetchone())
+            if js:
+                if js['status'] == 'Cancelled':
+                    raise CancelledOrderException
+        except (KeyError, CancelledOrderException) as e:
+            logging.error(e)
+            return build_cors_response(f"Invalid input: {request.json}. "
+                                       f"Please input a valid status and order id")
+
+        job = update_order_status(order_id, status)
+        if job['status'] == status:
+            # sqlalchemy doesn't like parameterizing the text in to_jsonb() so we have to have 3 different queries
+            if status == 'Open':
+                update_result = session.execute("update dashboard_orders set order_json = "
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Open'::TEXT)) where id "
+                                                "= :order_id;",
+                                                {'order_id': order_id})
+            if status == 'Closed':
+                update_result = session.execute("update dashboard_orders set order_json = "
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Closed'::TEXT)) where id "
+                                                "= :order_id",
+                                                {'order_id': order_id})
+            if status == 'Cancelled':
+                update_result = session.execute("update dashboard_orders set order_json = "
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Closed'::TEXT)) where id "
+                                                "= :order_id",
+                                                {'order_id': order_id})
+            session.commit()
+            if update_result:
+                session.close()
+                js['status'] = status
+                response = build_cors_response(js)
+                return response
+        response = build_cors_response("Update Failed")
+        return response
+
     elif request.method == 'DELETE':
         # deleting orders is unsupported
         session.close()
@@ -222,7 +269,7 @@ def scan_confirms():
         try:
             upc = request.form['upc_code']
             order_id = request.form['order_id']
-            logging.info('Order %s scanned, upc %s',order_id, upc)
+            logging.info('Order %s scanned, upc %s', order_id, upc)
             Session = sessionmaker(bind=db.get_db())
             session = Session()
             result = session.execute("select order_json from dashboard_orders where id=:order_id",
@@ -325,7 +372,7 @@ def order_status():
         rs = con.execute('''
         SELECT
             ShipVia as ship_via,
-            CASE InvoiType WHEN 51 THEN '' ELSE ShipDate END AS ship_date,
+            CASE InvoiType WHEN 51 THEN NULL ELSE ShipDate END AS ship_date,
             ShipTo as ship_to,
             PONum as po_num,
             TrackingNo as tracking_num
@@ -341,8 +388,8 @@ def order_status():
             "poNum": line['po_num'],
             "shipTo": line['ship_to'],
             "shipVia": line['ship_via'],
-            "shipDate": line['ship_date'].strftime("%Y-%m-%d") if line['ship_date'] != '' else '',
-            "trackingNo": line['tracking_num']
+            "shipDate": line['ship_date'].strftime("%Y-%m-%d") if line['ship_date'] is not None else '',
+            "trackingNo": line['tracking_num'] if line['tracking_num'] is not None else ''
         })
     if order_list:
         return build_cors_response({'orders': order_list})
