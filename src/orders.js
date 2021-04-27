@@ -1,7 +1,13 @@
 import * as React from "react";
 import { List, Edit, Datagrid, TextField, ArrayField, ReferenceField,
-    DateField, SingleFieldList, ChipField, SimpleForm, SelectInput,
+    SaveButton, Toolbar, SingleFieldList, ChipField, SimpleForm, SelectInput,
     TextInput, ArrayInput, DateInput, SimpleFormIterator } from 'react-admin';
+
+const PostEditToolbar = props => (
+    <Toolbar {...props} >
+        <SaveButton disabled={!props.pristine} />
+    </Toolbar>
+);
 
 export const OrderList = props => (
     <List {...props}>
@@ -15,15 +21,15 @@ export const OrderList = props => (
     </List>
 );
 
-export const OrderEdit = props => (
+export const OrderEdit = ({permissions, ...props}) => (
     <Edit {...props}>
-        <SimpleForm>
+        <SimpleForm toolbar={<PostEditToolbar />}>
             <TextInput disabled source="order_id" />
-            <SelectInput source="status" choices={[
+            {permissions === 'shipping' && <SelectInput source="status" choices={[
                 { id: 'Open', name: 'Open'},
                 { id: 'Closed', name: 'Closed'},
                 { id: 'Cancelled', name: 'Cancelled'},
-            ]} />
+            ]} /> }
             <TextInput disabled source="ship_via" />
             <SelectInput disabled source="order_type" choices={[
                 { id: 'Invoiced', name: 'Invoiced'},

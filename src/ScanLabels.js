@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import BarcodeScanner from "react-barcode-reader";
-import { useNotify, useRedirect, fetchStart, fetchEnd } from 'react-admin';
+import { useNotify, fetchStart, fetchEnd } from 'react-admin';
 import { useDispatch } from "react-redux";
 
 function handleErrors(response) {
@@ -33,8 +33,8 @@ const ScanLabels = () => {
             const newScan = new FormData();
             newScan.append('upc_code', upc_code);
             newScan.append('order_id', order_id);
-            fetch(`http://10.30.30.13:8000/scan_confirm`, { method: 'PUT', body: newScan })
-            //fetch(`/scan_confirm`, { method: 'PUT', body: newScan })
+            //fetch(`http://10.30.30.13:8000/scan_confirm`, { method: 'PUT', body: newScan })
+            fetch(`/scan_confirm`, { method: 'PUT', body: newScan })
                 .then(handleErrors)
                 .then(() => {
                     notify('Scan Successful: ' + upc_code + ' for order # ' + order_id,
@@ -63,6 +63,5 @@ const ScanLabels = () => {
     </div>);
 
 };
-
 
 export default ScanLabels;

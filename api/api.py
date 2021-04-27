@@ -397,6 +397,25 @@ def order_status():
         return build_cors_response({'orders': ''})
 
 
+@app.errorhandler(401)
+@app.route('/login', methods=['POST', 'OPTIONS'])
+def login():
+    if request.method == 'OPTIONS':
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS, POST'
+        return response
+    if request.method == 'POST':
+        username = request.json['username']
+        password = request.json['password']
+        if username == 'shipping' and password == 'shipping':
+            return build_cors_response({'id': 'shipping', 'fullName': 'Shipping Manager'})
+        elif username == 'shipping':
+            return build_cors_response({'error': 'incorrect password'}, 401)
+        else:
+            return build_cors_response({'id': 'guest', 'fullName': 'Guest'})
+        return build_cors_response({'error': 'Incorrect Username or Password'})
+
+
 def result_process(result):
     if result:
         if len(result) > 1:
@@ -405,8 +424,8 @@ def result_process(result):
             return result[0]
 
 
-def build_cors_response(output):
-    response = jsonify(output)
+def build_cors_response(output, *args, **kwargs):
+    response = jsonify(output, *args, **kwargs)
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = '*'
     response.headers['Access-Control-Allow-Methods'] = '*'
