@@ -42,7 +42,8 @@ const ShipViaGrid = props => {
     ));
 
     return (
-        <DataGrid rows={ship_via_grid} columns={columns} autoHeight="true" hideFooter="true" onRowClick={handleClick} />
+        <DataGrid rows={ship_via_grid} columns={columns} autoHeight="true" hideFooter="true" onRowClick={handleClick}
+        sortModel={[{ field:'ship_via', sort: 'asc'},]} />
     );
 };
 
