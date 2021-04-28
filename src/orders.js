@@ -5,7 +5,7 @@ import { List, Edit, Datagrid, TextField, ArrayField, ReferenceField,
 
 const PostEditToolbar = props => (
     <Toolbar {...props} >
-        <SaveButton disabled={!props.pristine} />
+        <SaveButton disabled={props.pristine} />
     </Toolbar>
 );
 
