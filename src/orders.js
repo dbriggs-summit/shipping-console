@@ -1,5 +1,5 @@
 import * as React from "react";
-import { List, Edit, Datagrid, TextField, ArrayField, ReferenceField,
+import { Filter, List, Edit, Datagrid, TextField, ArrayField, ReferenceField,
     SaveButton, Toolbar, SingleFieldList, ChipField, SimpleForm, SelectInput,
     TextInput, ArrayInput, DateInput, SimpleFormIterator } from 'react-admin';
 
@@ -9,14 +9,32 @@ const PostEditToolbar = props => (
     </Toolbar>
 );
 
+export const OrderFilter = (props) => (
+  <Filter {...props}>
+      <TextInput label="Search" source="q" alwaysOn />
+      <SelectInput label="Status" source="status" choices={[
+                { id: 'Released', name: 'Open'},
+                { id: 'Fulfilled', name: 'Closed'},
+                { id: 'Cancelled', name: 'Cancelled'},
+                { id: 'Delayed', name: 'Delayed'},
+            ]} />
+      <SelectInput label="Ship From" source="ship_from" choices={[
+          { id: 'Bronx', name: 'Bronx'},
+          { id: 'Edison', name: 'Edison'},
+      ]} />
+  </Filter>
+);
+
 export const OrderList = props => (
-    <List {...props}>
+    <List filters={<OrderFilter />} {...props}>
         <Datagrid optimized rowClick="edit">
             <TextField source="id" />
-            <ArrayField source="lines"><SingleFieldList><ChipField source="item_id" /></SingleFieldList></ArrayField>
             <ReferenceField source="order_id" reference="orders"><TextField source="id" /></ReferenceField>
             <TextField source="status" />
+            <TextField source="ship_from" />
+            <TextField source="ship_date" options={{ timeZone: 'UTC' }} />
             <TextField source="ship_via" />
+            <ArrayField source="lines"><SingleFieldList><ChipField source="item_id" /></SingleFieldList></ArrayField>
         </Datagrid>
     </List>
 );

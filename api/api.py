@@ -22,6 +22,25 @@ app.config.from_pyfile('config.py', silent=True)
 q = Queue(connection=conn)
 
 
+def fulltext_search(text, order_list):
+    lower_text = text.lower()
+    output_list = []
+    for o in order_list:
+        if lower_text in o['id'].lower() or \
+                lower_text in o['ship_via'].lower() or \
+                lower_text in o['status'].lower() or \
+                lower_text in o['ship_from'].lower() or \
+                lower_text in o['order_type'].lower():
+            output_list.append(o)
+
+        for line in o['lines']:
+            if lower_text in line['item_id'].lower() or \
+                    lower_text in line['upc_code'].lower():
+                output_list.append(o)
+                break
+    return output_list
+
+
 # call to update dashboard database
 @app.cli.command()
 def order_poll():
@@ -44,10 +63,11 @@ def order_poll():
                     when h.invoitype = 51 then 'Open'
                     else 'Unknown' end as order_type,
                 w.WarehouseId as ship_from,
-                case when x04472474_PendingCancellation = 1  then 'Cancelled'
-                    when (x04472474_BLStatus is NULL or 
-                    (x04472474_BLStatus <> 'Ready to Ship' and x04472474_BLStatus <> 'Closed')) then 'Open'
-                    when (x04472474_BLStatus = 'Closed' or x04472474_BLStatus = 'Ready to Ship') then 'Closed'
+                case when (x04472474_PendingCancellation = 1  or usrCancelled = 1) then 'Cancelled'
+                        when (x04472474_BLStatus = 'Closed' or x04472474_BLStatus = 'Ready to Ship') then 'Fulfilled'
+                        when x04472474_Delayed = 1 then 'Delayed'
+                        when (x04472474_BLStatus is NULL or 
+                            (x04472474_BLStatus <> 'Ready to Ship' and x04472474_BLStatus <> 'Closed')) then 'Released'
                     end as 'status',
                 d.Qty as qty,
                 d.usrBarcodeScanCount as qty_scanned,
@@ -57,9 +77,11 @@ def order_poll():
             from InvoiHdr as h inner join InvoiDet as d on h.InInvoiId = d.ExInvoiId
             inner join Item as i on d.ExItemId = i.InItemId
             inner join Warehouse as w on d.usrShipFromWarehouse = w.InWarehouseId
-            where h.[x04472474_ShippedDate] = {date} AND h.[InvoiType] = 51 AND 
-                d.[usrShipFromWarehouse] = 4 AND h.[x04472474_Shipped] = 1 AND 
-                h.[ShipVia] != '' and i.itemid not in ('j4g','j5u','x1','j4', 'j8')
+            inner join Cust as c on h.ExCustID = c.InCustId
+            where /*h.[x04472474_ShippedDate] = '2021-05-18' AND*/ h.[InvoiType] = 51 AND 
+                d.[usrShipFromWarehouse] in (1, 4) AND h.[x04472474_Shipped] = 1 AND 
+                /*h.[ShipVia] != '' and*/ i.itemid not in ('j4g','j5u','x1','j4', 'j8') AND
+                c.custid not in ('zscr')
         """).fetchall()
 
     new_orders = []
@@ -75,6 +97,7 @@ def order_poll():
                 "ship_date": line['ship_date'].strftime("%Y-%m-%d"),
                 "order_type": line['order_type'],
                 "status": line['status'],
+                "ship_from": line['ship_from'],
                 "lines": []
             })
             order_list[line['id']] = idx
@@ -83,7 +106,6 @@ def order_poll():
         new_orders[order_list[line['id']]]["lines"].append({
             "qty": str(line['qty']),
             "qty_scanned": str(line['qty_scanned']),
-            "ship_from": line['ship_from'],
             "upc_code": line['upc_code'],
             "item_id": line['item_id'],
             "line_id": line['line_id']
@@ -131,13 +153,15 @@ def orders():
             end = len(output)
             total_size = len(output)
 
-            if _filter:
-                str_filter = list(map(lambda x: x.strip('"'), _filter.strip('}{').split(':')))
+            if _filter and _filter.strip('}{') != '':
+                filter_dict = json.loads(_filter)
+                print(filter_dict)
                 try:
-                    name = str_filter[0]
-                    values = str_filter[1]
-                    # filter_dict = {}
-                    output = list(filter(lambda x: x[name] == values, output))
+                    if 'q' in filter_dict:
+                        output = fulltext_search(filter_dict['q'], output)
+                    else:
+                        for name in filter_dict.keys():
+                            output = list(filter(lambda x: x[name] == filter_dict[name], output))
                     end = len(output)
                     total_size = len(output)
                 except (KeyError, IndexError):

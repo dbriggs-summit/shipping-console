@@ -6,7 +6,17 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import ArrowDropDownCircleIcon from '@material-ui/icons/ArrowDropDownCircle';
 import ShipViaGrid from "./ShipViaGrid";
 import { Title } from 'react-admin';
+import configData from "./config.json";
 
+function today_date() {
+    const today = configData.mode === 'development' ? new Date(2021, 2, 4) : new Date(); //January is 0
+
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+
+    return yyyy + '-' + mm + '-' + dd;
+}
 
 const styles = {
     flex: { display: 'flex' },
@@ -30,7 +40,7 @@ const Dashboard = () => {
             {
                 pagination: { page: 1, perPage: 9999},
                 sort: { field: 'id', order: 'DESC'},
-                filter: {},
+                filter: {ship_from: 'Edison', ship_date: today_date()},
             }
         );
         const aggregations = data
@@ -41,13 +51,13 @@ const Dashboard = () => {
                         stats.ship_vias[order.ship_via] = [order.ship_via,0,0,0];
                     }
 
-                    if (order.status === 'Open') {
+                    if (order.status === 'Released') {
                         stats.open_orders++;
                         stats.all_orders++;
                         stats.ship_vias[order.ship_via][1]++;
                         stats.ship_vias[order.ship_via][3]++;
                     }
-                    if (order.status === 'Closed') {
+                    if (order.status === 'Fulfilled') {
                         stats.closed_orders++;
                         stats.all_orders++;
                         stats.ship_vias[order.ship_via][2]++;
@@ -90,19 +100,20 @@ const Dashboard = () => {
                 <div style={styles.flex}>
                     <Title title="Shipping Console" />
                     <OrderCard value={all_orders} title="Total Orders" to={{
-                        pathname: "/orders"
+                        pathname: "/orders",
+                        search: `filter=${JSON.stringify({ ship_from: 'Edison', ship_date: today_date()})}`
                     }}
                                icon={EventIcon} />
                     <Spacer />
                     <OrderCard value={open_orders} title="Open Orders" to={{
                         pathname: "/orders",
-                        search: `filter=${JSON.stringify({ status: 'Open'})}`
+                        search: `filter=${JSON.stringify({ status: 'Released', ship_from: 'Edison', ship_date: today_date()})}`
                     }}
                                icon={ArrowDropDownCircleIcon} />
                     <Spacer />
                     <OrderCard value={closed_orders} title="Closed Orders" to={{
                         pathname: "/orders",
-                        search: `filter=${JSON.stringify({ status: 'Closed'})}`
+                        search: `filter=${JSON.stringify({ status: 'Fulfilled', ship_from: 'Edison', ship_date: today_date()})}`
                     }}
                                icon={CheckCircleIcon} />
                 </div>
