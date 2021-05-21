@@ -30,6 +30,7 @@ def fulltext_search(text, order_list):
                 lower_text in o['ship_via'].lower() or \
                 lower_text in o['status'].lower() or \
                 lower_text in o['ship_from'].lower() or \
+                lower_text in o['po_number'].lower() or \
                 lower_text in o['order_type'].lower():
             output_list.append(o)
 
@@ -58,6 +59,7 @@ def order_poll():
                 h.shipvia as ship_via, 
                 h.OrderId as order_id,
                 h.x04472474_ShippedDate as ship_date,
+                isnull(h.PONum, '') as po_number,
                 case when h.invoitype = 1 then 'Invoiced'
                     when h.invoitype = 50 then 'Estimate'
                     when h.invoitype = 51 then 'Open'
@@ -81,7 +83,7 @@ def order_poll():
             where /*h.[x04472474_ShippedDate] = '2021-05-18' AND*/ h.[InvoiType] = 51 AND 
                 d.[usrShipFromWarehouse] in (1, 4) AND h.[x04472474_Shipped] = 1 AND 
                 /*h.[ShipVia] != '' and*/ i.itemid not in ('j4g','j5u','x1','j4', 'j8') AND
-                c.custid not in ('zscr')
+                c.custid not in ('zemp')
         """).fetchall()
 
     new_orders = []
@@ -98,6 +100,7 @@ def order_poll():
                 "order_type": line['order_type'],
                 "status": line['status'],
                 "ship_from": line['ship_from'],
+                "po_number": line['po_number'],
                 "lines": []
             })
             order_list[line['id']] = idx
@@ -237,20 +240,25 @@ def order(order_id):
 
         job = update_order_status(order_id, status)
         if job['status'] == status:
-            # sqlalchemy doesn't like parameterizing the text in to_jsonb() so we have to have 3 different queries
-            if status == 'Open':
+            # sqlalchemy doesn't like parameterizing the text in to_jsonb() so we have to have 4 different queries
+            if status == 'Released':
                 update_result = session.execute("update dashboard_orders set order_json = "
-                                                "jsonb_set(order_json, '{status}',to_jsonb('Open'::TEXT)) where id "
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Released'::TEXT)) where id "
                                                 "= :order_id;",
                                                 {'order_id': order_id})
-            if status == 'Closed':
+            if status == 'Fulfilled':
                 update_result = session.execute("update dashboard_orders set order_json = "
-                                                "jsonb_set(order_json, '{status}',to_jsonb('Closed'::TEXT)) where id "
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Fulfilled'::TEXT)) where id "
                                                 "= :order_id",
                                                 {'order_id': order_id})
             if status == 'Cancelled':
                 update_result = session.execute("update dashboard_orders set order_json = "
-                                                "jsonb_set(order_json, '{status}',to_jsonb('Closed'::TEXT)) where id "
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Cancelled'::TEXT)) where id "
+                                                "= :order_id",
+                                                {'order_id': order_id})
+            if status == 'Delayed':
+                update_result = session.execute("update dashboard_orders set order_json = "
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Delayed'::TEXT)) where id "
                                                 "= :order_id",
                                                 {'order_id': order_id})
             session.commit()

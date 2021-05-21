@@ -6,17 +6,8 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import ArrowDropDownCircleIcon from '@material-ui/icons/ArrowDropDownCircle';
 import ShipViaGrid from "./ShipViaGrid";
 import { Title } from 'react-admin';
-import configData from "./config.json";
+import today_date from "./utilities";
 
-function today_date() {
-    const today = configData.mode === 'development' ? new Date(2021, 2, 4) : new Date(); //January is 0
-
-    const dd = String(today.getDate()).padStart(2, '0');
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const yyyy = today.getFullYear();
-
-    return yyyy + '-' + mm + '-' + dd;
-}
 
 const styles = {
     flex: { display: 'flex' },
@@ -57,12 +48,16 @@ const Dashboard = () => {
                         stats.ship_vias[order.ship_via][1]++;
                         stats.ship_vias[order.ship_via][3]++;
                     }
-                    if (order.status === 'Fulfilled') {
+                    else if (order.status === 'Fulfilled') {
                         stats.closed_orders++;
                         stats.all_orders++;
                         stats.ship_vias[order.ship_via][2]++;
                         stats.ship_vias[order.ship_via][3]++;
                     }
+                    /*else {
+                        stats.all_orders++;
+                        stats.ship_vias[order.ship_via][3]++;
+                    }*/
                     return stats;
                 },{
                     open_orders: 0,

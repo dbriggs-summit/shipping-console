@@ -1,6 +1,7 @@
 import * as React from "react";
 import { DataGrid } from '@material-ui/data-grid';
 import { useHistory } from 'react-router-dom';
+import today_date from "./utilities";
 
 const columns = [
     {field: 'ship_via', headerName: 'Ship Via', width: 210},
@@ -18,7 +19,11 @@ const ShipViaGrid = props => {
         //console.log(rowData.row.ship_via);
         history.push({
                         pathname: "/orders",
-                        search: `filter=${JSON.stringify({ ship_via: rowData.row.ship_via})}`
+                        search: `filter=${JSON.stringify({ 
+                            ship_via: rowData.row.ship_via, 
+                            ship_from: 'Edison', 
+                            ship_date: today_date()
+                        })}`
     });
     };
     const ship_via_grid = (ship_vias.value === undefined ?

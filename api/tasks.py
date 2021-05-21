@@ -147,7 +147,7 @@ def update_order_status(order_id, order_status):
             for line in result.fetchall():
                 if order_status == 'Cancelled':
                     pass    # Don't support cancelling at the moment
-                elif order_status == 'Open' or order_status == 'Closed':
+                elif order_status == 'Released' or order_status == 'Fulfilled' or order_status == 'Delayed':
                     if line['status'] != order_status:
                         session.execute(
                             '''

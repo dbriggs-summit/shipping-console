@@ -20,6 +20,7 @@ select h.invoiid as id,
             from InvoiHdr as h inner join InvoiDet as d on h.InInvoiId = d.ExInvoiId
             inner join Item as i on d.ExItemId = i.InItemId
             inner join Warehouse as w on d.usrShipFromWarehouse = w.InWarehouseId
-            where h.[x04472474_ShippedDate] = '2021-05-18' AND h.[InvoiType] = 51 AND
+            where /*h.[x04472474_ShippedDate] = '2021-05-18' AND*/ h.[InvoiType] = 51 AND
                 d.[usrShipFromWarehouse] = 4 AND h.[x04472474_Shipped] = 1 AND
-                h.[ShipVia] != '' and i.itemid not in ('j4g','j5u','x1','j4', 'j8')
+                h.[ShipVia] != '' and i.itemid not in ('j4g','j5u','x1','j4', 'j8') AND
+                c.custid not in ('zemp')

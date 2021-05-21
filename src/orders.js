@@ -13,8 +13,8 @@ export const OrderFilter = (props) => (
   <Filter {...props}>
       <TextInput label="Search" source="q" alwaysOn />
       <SelectInput label="Status" source="status" choices={[
-                { id: 'Released', name: 'Open'},
-                { id: 'Fulfilled', name: 'Closed'},
+                { id: 'Released', name: 'Released'},
+                { id: 'Fulfilled', name: 'Fulfilled'},
                 { id: 'Cancelled', name: 'Cancelled'},
                 { id: 'Delayed', name: 'Delayed'},
             ]} />
@@ -28,8 +28,8 @@ export const OrderFilter = (props) => (
 export const OrderList = props => (
     <List filters={<OrderFilter />} {...props}>
         <Datagrid optimized rowClick="edit">
-            <TextField source="id" />
             <ReferenceField source="order_id" reference="orders"><TextField source="id" /></ReferenceField>
+            <TextField source="po_number" />
             <TextField source="status" />
             <TextField source="ship_from" />
             <TextField source="ship_date" options={{ timeZone: 'UTC' }} />
@@ -44,10 +44,12 @@ export const OrderEdit = ({permissions, ...props}) => (
         <SimpleForm toolbar={<PostEditToolbar />}>
             <TextInput disabled source="order_id" />
             {permissions === 'shipping' && <SelectInput source="status" choices={[
-                { id: 'Open', name: 'Open'},
-                { id: 'Closed', name: 'Closed'},
+                { id: 'Released', name: 'Released'},
+                { id: 'Fulfilled', name: 'Fulfilled'},
                 { id: 'Cancelled', name: 'Cancelled'},
+                { id: 'Delayed', name: 'Delayed'}
             ]} /> }
+            <TextInput disabled source="po_number" />
             <TextInput disabled source="ship_via" />
             <SelectInput disabled source="order_type" choices={[
                 { id: 'Invoiced', name: 'Invoiced'},
