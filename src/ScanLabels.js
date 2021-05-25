@@ -36,12 +36,18 @@ const ScanLabels = () => {
             //fetch(`http://10.30.30.13:8000/scan_confirm`, { method: 'PUT', body: newScan })
             fetch(`/scan_confirm`, { method: 'PUT', body: newScan })
                 .then(handleErrors)
+                .then(response => response.text())
+                .then(text => {
+                        if(text.substring(0,6) === "\"Error") {
+                            throw Error(text);
+                        }
+                })
                 .then(() => {
                     notify('Scan Successful: ' + upc_code + ' for order # ' + order_id,
                         'info',{},false, 5000);
                 })
                 .catch((e) => {
-                    notify('Error: Problem with scan: ' + e,'warning',
+                    notify('Problem with scan: ' + e,'warning',
                         {},false, 5000)
                 })
                 .finally(() => {

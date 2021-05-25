@@ -317,8 +317,7 @@ def scan_confirms():
 
         except (KeyError, CancelledOrderException, OrderDoesNotExistException) as e:
             logging.error(e)
-            return build_cors_response(f"Invalid input: {request.json}. "
-                                       f"Please input a UPC code and order id", status=500)
+            return build_cors_response(f"Error: {e}")
 
         job = q.enqueue_call(
             func=update_scan_confirm, args=(upc, order_id), result_ttl=86400,
