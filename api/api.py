@@ -9,7 +9,7 @@ from rq import Retry, Queue
 from rq.job import Job
 from worker import conn
 from tasks import update_scan_confirm, update_order_status
-from exceptions import CancelledOrderException
+from exceptions import CancelledOrderException, OrderDoesNotExistException
 from logging.config import dictConfig
 import logging
 import config
@@ -94,7 +94,7 @@ def order_poll():
         if line.id not in order_list:
             new_orders.append({  # insert header record
                 "id": line['id'],
-                "ship_via": line['ship_via'],
+                "ship_via": line['ship_via'] if line['ship_via'] is not None else '',
                 "order_id": line['order_id'],
                 "ship_date": line['ship_date'].strftime("%Y-%m-%d"),
                 "order_type": line['order_type'],
@@ -308,13 +308,17 @@ def scan_confirms():
                                      {'order_id': order_id.strip('"')})
             session.close()
             js = result_process(result.fetchone())
-            if js:
+            print(js)
+            if js is not None:
                 if js['status'] == 'Cancelled':
-                    raise CancelledOrderException
-        except (KeyError, CancelledOrderException) as e:
+                    raise CancelledOrderException(order_id)
+            else:
+                raise OrderDoesNotExistException(order_id)
+
+        except (KeyError, CancelledOrderException, OrderDoesNotExistException) as e:
             logging.error(e)
             return build_cors_response(f"Invalid input: {request.json}. "
-                                       f"Please input a UPC code and order id")
+                                       f"Please input a UPC code and order id", status=500)
 
         job = q.enqueue_call(
             func=update_scan_confirm, args=(upc, order_id), result_ttl=86400,
@@ -456,8 +460,10 @@ def result_process(result):
             return result[0]
 
 
-def build_cors_response(output, *args, **kwargs):
-    response = jsonify(output, *args, **kwargs)
+def build_cors_response(output, status='', **kwargs):
+    response = jsonify(output, **kwargs)
+    if status != '':
+        response.status_code = status
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = '*'
     response.headers['Access-Control-Allow-Methods'] = '*'
