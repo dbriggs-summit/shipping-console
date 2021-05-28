@@ -66,7 +66,8 @@ def order_poll():
                     else 'Unknown' end as order_type,
                 w.WarehouseId as ship_from,
                 case when (x04472474_PendingCancellation = 1  or usrCancelled = 1) then 'Cancelled'
-                        when (x04472474_BLStatus = 'Closed' or x04472474_BLStatus = 'Ready to Ship') then 'Fulfilled'
+                        when (x04472474_BLStatus = 'Closed' or x04472474_BLStatus = 'Ready to Ship' or 
+                            x04472474_BLStatus = 'Fulfilled') then 'Fulfilled'
                         when x04472474_Delayed = 1 then 'Delayed'
                         when (x04472474_BLStatus is NULL or 
                             (x04472474_BLStatus <> 'Ready to Ship' and x04472474_BLStatus <> 'Closed')) then 'Released'
