@@ -20,7 +20,7 @@ const ShipViaGrid = props => {
         history.push({
                         pathname: "/orders",
                         search: `filter=${JSON.stringify({ 
-                            ship_via: rowData.row.ship_via, 
+                            ship_via: encodeURIComponent(rowData.row.ship_via), 
                             ship_from: 'Edison', 
                             ship_date: today_date()
                         })}`
