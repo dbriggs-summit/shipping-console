@@ -13,6 +13,7 @@ from exceptions import CancelledOrderException, OrderDoesNotExistException
 from logging.config import dictConfig
 import logging
 import config
+from gfp import item_matrix, order_matrix
 
 app = Flask(__name__)
 
@@ -431,6 +432,35 @@ def order_status():
         return build_cors_response({'orders': order_list})
     else:
         return build_cors_response({'orders': ''})
+
+
+@app.route('/freight_quote', methods=['PUT'])
+def freight_quote():
+    if request.method == 'PUT':
+        # set up GFPZone, Number of Units, and Size for each line item
+        # Determine flat charge for the entire shipment
+        # For each line, determine that unit's contribution
+        # Return shipment charge + each line charge
+        gfp_zone = -1
+        total_pkg_units = 0
+        flat_rate = 0
+        item_rate = 0
+        if request.json['shipToState'] == 'NY':
+            if request.json['shipToZip'] == '':  # NYC
+                gfp_zone = 1
+        elif request.json['GFPZone'] == "2":
+            gfp_zone = 2
+        elif request.json['GFPZone'] == "3":
+            gfp_zone = 3
+        elif request.json['GFPZone'] == "4":
+            gfp_zone = 4
+
+        try:
+            flat_rate = order_matrix[gfp_zone][total_pkg_units]
+        except ValueError:
+            pass
+
+        return build_cors_response({'total': flat_rate + item_rate})
 
 
 @app.errorhandler(401)
