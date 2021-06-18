@@ -13,7 +13,8 @@ from exceptions import CancelledOrderException, OrderDoesNotExistException
 from logging.config import dictConfig
 import logging
 import config
-from gfp import item_matrix, order_matrix
+from gfp import item_matrix, order_matrix, nyc_zip
+from math import ceil
 
 app = Flask(__name__)
 
@@ -442,11 +443,11 @@ def freight_quote():
         # For each line, determine that unit's contribution
         # Return shipment charge + each line charge
         gfp_zone = -1
-        total_pkg_units = 0
+        total_units = 0
         flat_rate = 0
         item_rate = 0
         if request.json['shipToState'] == 'NY':
-            if request.json['shipToZip'] == '':  # NYC
+            if request.json['shipToZip'] in nyc_zip:  # NYC
                 gfp_zone = 1
         elif request.json['GFPZone'] == "2":
             gfp_zone = 2
@@ -455,10 +456,56 @@ def freight_quote():
         elif request.json['GFPZone'] == "4":
             gfp_zone = 4
 
+        if gfp_zone == -1:
+            return build_cors_response({'total': 0})
+
+        for line in request.json['lines']:
+            if line['unitSize'] and line['unitSize'] != '':
+                if line['unitSize'] != 'Parcel':
+                    total_units += float(line['itemQty'])
+                else:
+                    total_units += float(line['itemQty']) *.25
+        total_units = int(ceil(total_units))
+
+        total_pkg_units = '1'
+        # print(total_units)
+
+        if 1 < total_units <= 3:
+            total_pkg_units = '2-3'
+        elif 3 < total_units <= 6:
+            total_pkg_units = '4-6'
+        elif 6 < total_units <= 11:
+            total_pkg_units = '7-11'
+        elif 11 < total_units <= 15:
+            total_pkg_units = '12-15'
+        elif 15 < total_units <= 19:
+            total_pkg_units = '16-19'
+        elif 19 < total_units <= 23:
+            total_pkg_units = '20-23'
+        elif 23 < total_units <= 29:
+            total_pkg_units = '24-29'
+        elif 29 < total_units <= 35:
+            total_pkg_units = '30-35'
+        elif 35 < total_units <= 47:
+            total_pkg_units = '36-47'
+        elif total_units > 47:
+            total_pkg_units = '48+'
+
+        # print(total_pkg_units)
+
         try:
             flat_rate = order_matrix[gfp_zone][total_pkg_units]
-        except ValueError:
+        except KeyError:
             pass
+
+        if flat_rate == 0:
+            for line in request.json['lines']:
+                if line['unitSize'] and line['unitSize'] != '':
+                    if line['unitSize'] != 'Parcel':
+                        item_rate += item_matrix[gfp_zone][total_pkg_units][line['unitSize']] * float(line['itemQty'])
+                    else:
+                        item_rate += item_matrix[gfp_zone][total_pkg_units][line['unitSize']] * \
+                                     float(line['itemQty']) * 0.25
 
         return build_cors_response({'total': flat_rate + item_rate})
 
