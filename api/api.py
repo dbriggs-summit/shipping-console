@@ -1,5 +1,7 @@
 # TODO: better CORS support
 # TODO: support filtering in /orders
+import math
+
 from flask import Flask, request, jsonify
 import json
 import db
@@ -464,7 +466,7 @@ def freight_quote():
                 if line['unitSize'] != 'Parcel':
                     total_units += float(line['itemQty'])
                 else:
-                    total_units += float(line['itemQty']) *.25
+                    total_units += float(line['itemQty']) * 0.25
         total_units = int(ceil(total_units))
 
         total_pkg_units = '1'
@@ -498,14 +500,30 @@ def freight_quote():
         except KeyError:
             pass
 
+        size_list = {}
         if flat_rate == 0:
             for line in request.json['lines']:
                 if line['unitSize'] and line['unitSize'] != '':
                     if line['unitSize'] != 'Parcel':
-                        item_rate += item_matrix[gfp_zone][total_pkg_units][line['unitSize']] * float(line['itemQty'])
+                        if line['unitSize'] in size_list:
+                            size_list[line['unitSize']] += int(line['itemQty'])
+                        else:
+                            size_list[line['unitSize']] = int(line['itemQty'])
+                        # item_rate += item_matrix[gfp_zone][total_pkg_units][line['unitSize']] * float(line['itemQty'])
                     else:
-                        item_rate += item_matrix[gfp_zone][total_pkg_units][line['unitSize']] * \
-                                     float(line['itemQty']) * 0.25
+                        if line['unitSize'] in size_list:
+                            size_list[line['unitSize']] += int(line['itemQty']) * 0.25
+                        else:
+                            size_list[line['unitSize']] = int(line['itemQty']) * 0.25
+                        # item_rate += item_matrix[gfp_zone][total_pkg_units][line['unitSize']] * \
+                        #             float(line['itemQty']) * 0.25
+
+            if 'Parcel' in size_list:
+                size_list['Parcel'] = int(math.ceil(size_list['Parcel']))
+                print(size_list['Parcel'])
+
+            for size in size_list.keys():
+                item_rate += item_matrix[gfp_zone][total_pkg_units][size] * size_list[size]
 
         return build_cors_response({'total': flat_rate + item_rate})
 
