@@ -26,26 +26,6 @@ app.config.from_pyfile('config.py', silent=True)
 q = Queue(connection=conn)
 
 
-def fulltext_search(text, order_list):
-    lower_text = text.lower()
-    output_list = []
-    for o in order_list:
-        if lower_text in o['id'].lower() or \
-                lower_text in o['ship_via'].lower() or \
-                lower_text in o['status'].lower() or \
-                lower_text in o['ship_from'].lower() or \
-                lower_text in o['po_number'].lower() or \
-                lower_text in o['order_type'].lower():
-            output_list.append(o)
-
-        for line in o['lines']:
-            if lower_text in line['item_id'].lower() or \
-                    lower_text in line['upc_code'].lower():
-                output_list.append(o)
-                break
-    return output_list
-
-
 # call to update dashboard database
 @app.cli.command()
 def order_poll():
@@ -86,7 +66,7 @@ def order_poll():
             inner join Warehouse as w on d.usrShipFromWarehouse = w.InWarehouseId
             inner join Cust as c on h.ExCustID = c.InCustId
             where /*h.[x04472474_ShippedDate] = '2021-05-18' AND*/ h.[InvoiType] = 51 AND 
-                d.[usrShipFromWarehouse] in (1, 4) AND h.[x04472474_Shipped] = 1 AND 
+                d.[usrShipFromWarehouse] in (1, 4, 8) AND h.[x04472474_Shipped] = 1 AND 
                 /*h.[ShipVia] != '' and*/ i.itemid not in ('j4g','j5u','x1','j4', 'j8') AND
                 c.custid not in ('zemp')
         """).fetchall()
@@ -105,7 +85,7 @@ def order_poll():
                 "order_type": line['order_type'],
                 "status": line['status'],
                 "ship_from": line['ship_from'],
-                "po_number": line['po_number'],
+                "po_number": line['po_number'].replace("'", "''"),
                 "lines": []
             })
             order_list[line['id']] = idx
@@ -248,23 +228,23 @@ def order(order_id):
             # sqlalchemy doesn't like parameterizing the text in to_jsonb() so we have to have 4 different queries
             if status == 'Released':
                 update_result = session.execute("update dashboard_orders set order_json = "
-                                                "jsonb_set(order_json, '{status}',to_jsonb('Released'::TEXT)) where id "
-                                                "= :order_id;",
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Released'::TEXT)) where id"
+                                                " = :order_id;",
                                                 {'order_id': order_id})
             if status == 'Fulfilled':
                 update_result = session.execute("update dashboard_orders set order_json = "
-                                                "jsonb_set(order_json, '{status}',to_jsonb('Fulfilled'::TEXT)) where id "
-                                                "= :order_id",
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Fulfilled'::TEXT)) where id"
+                                                " = :order_id",
                                                 {'order_id': order_id})
             if status == 'Cancelled':
                 update_result = session.execute("update dashboard_orders set order_json = "
-                                                "jsonb_set(order_json, '{status}',to_jsonb('Cancelled'::TEXT)) where id "
-                                                "= :order_id",
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Cancelled'::TEXT)) where id"
+                                                " = :order_id",
                                                 {'order_id': order_id})
             if status == 'Delayed':
                 update_result = session.execute("update dashboard_orders set order_json = "
-                                                "jsonb_set(order_json, '{status}',to_jsonb('Delayed'::TEXT)) where id "
-                                                "= :order_id",
+                                                "jsonb_set(order_json, '{status}',to_jsonb('Delayed'::TEXT)) where id"
+                                                " = :order_id",
                                                 {'order_id': order_id})
             session.commit()
             if update_result:
@@ -470,7 +450,6 @@ def freight_quote():
         total_units = int(ceil(total_units))
 
         total_pkg_units = '1'
-        # print(total_units)
 
         if 1 < total_units <= 3:
             total_pkg_units = '2-3'
@@ -493,8 +472,6 @@ def freight_quote():
         elif total_units > 47:
             total_pkg_units = '48+'
 
-        # print(total_pkg_units)
-
         try:
             flat_rate = order_matrix[gfp_zone][total_pkg_units]
         except KeyError:
@@ -509,14 +486,11 @@ def freight_quote():
                             size_list[line['unitSize']] += int(line['itemQty'])
                         else:
                             size_list[line['unitSize']] = int(line['itemQty'])
-                        # item_rate += item_matrix[gfp_zone][total_pkg_units][line['unitSize']] * float(line['itemQty'])
                     else:
                         if line['unitSize'] in size_list:
                             size_list[line['unitSize']] += int(line['itemQty']) * 0.25
                         else:
                             size_list[line['unitSize']] = int(line['itemQty']) * 0.25
-                        # item_rate += item_matrix[gfp_zone][total_pkg_units][line['unitSize']] * \
-                        #             float(line['itemQty']) * 0.25
 
             if 'Parcel' in size_list:
                 size_list['Parcel'] = int(math.ceil(size_list['Parcel']))
@@ -541,10 +515,29 @@ def login():
         if username == 'shipping' and password == 'shipping':
             return build_cors_response({'id': 'shipping', 'fullName': 'Shipping Manager'})
         elif username == 'shipping':
-            return build_cors_response({'error': 'incorrect password'}, 401)
+            return build_cors_response({'error': 'incorrect password'}, '401')
         else:
             return build_cors_response({'id': 'guest', 'fullName': 'Guest'})
-        return build_cors_response({'error': 'Incorrect Username or Password'})
+
+
+def fulltext_search(text, order_list):
+    lower_text = text.lower()
+    output_list = []
+    for o in order_list:
+        if lower_text in o['id'].lower() or \
+                lower_text in o['ship_via'].lower() or \
+                lower_text in o['status'].lower() or \
+                lower_text in o['ship_from'].lower() or \
+                lower_text in o['po_number'].lower() or \
+                lower_text in o['order_type'].lower():
+            output_list.append(o)
+
+        for line in o['lines']:
+            if lower_text in line['item_id'].lower() or \
+                    lower_text in line['upc_code'].lower():
+                output_list.append(o)
+                break
+    return output_list
 
 
 def result_process(result):

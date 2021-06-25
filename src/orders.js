@@ -21,6 +21,7 @@ export const OrderFilter = (props) => (
       <SelectInput label="Ship From" source="ship_from" choices={[
           { id: 'Bronx', name: 'Bronx'},
           { id: 'Edison', name: 'Edison'},
+          { id: 'ED50D', name: 'ED50D'}
       ]} />
   </Filter>
 );
