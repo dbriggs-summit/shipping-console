@@ -31,7 +31,7 @@ q = Queue(connection=conn)
 def order_poll():
     try:
         if config.mode == 'development':
-            date = '\'2021-03-04\''
+            date = '\'2021-05-25\''
         else:
             date = 'cast(getdate() as date)'
     except KeyError:

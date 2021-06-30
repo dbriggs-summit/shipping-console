@@ -96,7 +96,7 @@ def update_scan_confirm(upc, order_id):
             session.execute(
                 '''
                 update invoihdr 
-                set x04472474_BLStatus = 'Closed'
+                set x04472474_BLStatus = 'Fulfilled'
                 from
                 invoihdr
                 where invoiid = :order_id
@@ -123,7 +123,7 @@ def update_order_status(order_id, order_status):
     """
 
     :param order_id: string. order to change
-    :param order_status: string. can be 'Open', 'Closed', or 'Cancelled'
+    :param order_status: string. can be 'Released', 'Fulfilled', 'Delayed' or 'Cancelled'
     :return:
     """
     errors = []
