@@ -79,7 +79,7 @@ def order_poll():
         if line.id not in order_list:
             new_orders.append({  # insert header record
                 "id": line['id'],
-                "ship_via": line['ship_via'] if line['ship_via'] is not None else '',
+                "ship_via": line['ship_via'].replace("'", "''") if line['ship_via'] is not None else '',
                 "order_id": line['order_id'],
                 "ship_date": line['ship_date'].strftime("%Y-%m-%d"),
                 "order_type": line['order_type'],
