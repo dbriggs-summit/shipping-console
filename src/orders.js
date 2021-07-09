@@ -23,6 +23,7 @@ export const OrderFilter = (props) => (
           { id: 'Edison', name: 'Edison'},
           { id: 'ED50D', name: 'ED50D'}
       ]} />
+      <DateInput label="Ship Date" source="ship_date" />
   </Filter>
 );
 
@@ -30,6 +31,7 @@ export const OrderList = props => (
     <List filters={<OrderFilter />} {...props}>
         <Datagrid optimized rowClick="edit">
             <ReferenceField source="order_id" reference="orders"><TextField source="id" /></ReferenceField>
+            <TextField source="cust_name" label="Customer Name" />
             <TextField source="po_number" />
             <TextField source="status" />
             <TextField source="ship_from" />
@@ -50,6 +52,7 @@ export const OrderEdit = ({permissions, ...props}) => (
                 { id: 'Cancelled', name: 'Cancelled'},
                 { id: 'Delayed', name: 'Delayed'}
             ]} /> }
+            <TextInput disabled source="cust_name" />
             <TextInput disabled source="po_number" />
             <TextInput disabled source="ship_via" />
             <SelectInput disabled source="order_type" choices={[

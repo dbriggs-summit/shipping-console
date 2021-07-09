@@ -5,6 +5,7 @@ import { useMediaQuery } from '@material-ui/core';
 import { DashboardMenuItem, MenuItemLink, getResources } from 'react-admin';
 import DefaultIcon from '@material-ui/icons/ViewList';
 import CropFreeIcon from '@material-ui/icons/CropFree';
+import DashboardIcon from '@material-ui/icons/Dashboard';
 
 const Menu = ({ onMenuClick, logout }) => {
     const isXSmall = useMediaQuery(theme => theme.breakpoints.down('xs'));
@@ -12,7 +13,21 @@ const Menu = ({ onMenuClick, logout }) => {
     const resources = useSelector(getResources);
     return (
         <div>
-            <DashboardMenuItem onClick={onMenuClick} sidebarIsOpen={open} />
+            <DashboardMenuItem onClick={onMenuClick} primaryText="Edison" sidebarIsOpen={open} />
+            <MenuItemLink
+                to="/dashboard-bronx"
+                primaryText="Bronx"
+                leftIcon={<DashboardIcon />}
+                onClick={onMenuClick}
+                sidebarIsOpen={open}
+            />
+            <MenuItemLink
+                to="/dashboard-ED50D"
+                primaryText="ED50D"
+                leftIcon={<DashboardIcon />}
+                onClick={onMenuClick}
+                sidebarIsOpen={open}
+            />
             {resources.map(resource => (
                 <MenuItemLink
                     key={resource.name}

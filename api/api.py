@@ -42,6 +42,7 @@ def order_poll():
             f"""select h.invoiid as id, 
                 h.shipvia as ship_via, 
                 h.OrderId as order_id,
+                c.Name as cust_name,
                 h.x04472474_ShippedDate as ship_date,
                 isnull(h.PONum, '') as po_number,
                 case when h.invoitype = 1 then 'Invoiced'
@@ -65,9 +66,9 @@ def order_poll():
             inner join Item as i on d.ExItemId = i.InItemId
             inner join Warehouse as w on d.usrShipFromWarehouse = w.InWarehouseId
             inner join Cust as c on h.ExCustID = c.InCustId
-            where /*h.[x04472474_ShippedDate] = '2021-05-18' AND*/ h.[InvoiType] = 51 AND 
+            where h.[InvoiType] = 51 AND 
                 d.[usrShipFromWarehouse] in (1, 4, 8) AND h.[x04472474_Shipped] = 1 AND 
-                /*h.[ShipVia] != '' and*/ i.itemid not in ('j4g','j5u','x1','j4', 'j8') AND
+                i.itemid not in ('j4g','j5u','x1','j4', 'j8') AND
                 c.custid not in ('zemp')
         """).fetchall()
 
@@ -79,6 +80,7 @@ def order_poll():
         if line.id not in order_list:
             new_orders.append({  # insert header record
                 "id": line['id'],
+                "cust_name": line['cust_name'].replace("'", "''") if line['cust_name'] is not None else '',
                 "ship_via": line['ship_via'].replace("'", "''") if line['ship_via'] is not None else '',
                 "order_id": line['order_id'],
                 "ship_date": line['ship_date'].strftime("%Y-%m-%d"),
@@ -529,7 +531,9 @@ def fulltext_search(text, order_list):
                 lower_text in o['status'].lower() or \
                 lower_text in o['ship_from'].lower() or \
                 lower_text in o['po_number'].lower() or \
-                lower_text in o['order_type'].lower():
+                lower_text in o['order_type'].lower() or \
+                lower_text in o['cust_name'].lower() or \
+                lower_text in o['ship_date']:
             output_list.append(o)
 
         for line in o['lines']:

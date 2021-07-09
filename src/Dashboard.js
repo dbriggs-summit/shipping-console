@@ -21,7 +21,8 @@ const Spacer = () => <span style={{ width: '1em' }} />;
 const VerticalSpacer = () => <span style={{ height: '1em' }} />;
 
 
-const Dashboard = () => {
+const Dashboard = (props) => {
+    const location = props.dash_loc == null ? 'Edison' : props.dash_loc;
     const dataProvider = useDataProvider();
     const [state, setState] = useState({});
     const version = useVersion();
@@ -31,7 +32,7 @@ const Dashboard = () => {
             {
                 pagination: { page: 1, perPage: 9999},
                 sort: { field: 'id', order: 'DESC'},
-                filter: {ship_from: 'Edison', ship_date: today_date()},
+                filter: {ship_from: location, ship_date: today_date()},
             }
         );
         const aggregations = data
@@ -96,19 +97,19 @@ const Dashboard = () => {
                     <Title title="Shipping Console" />
                     <OrderCard value={all_orders} title="Total Orders" to={{
                         pathname: "/orders",
-                        search: `filter=${JSON.stringify({ ship_from: 'Edison', ship_date: today_date()})}`
+                        search: `filter=${JSON.stringify({ ship_from: location, ship_date: today_date()})}`
                     }}
                                icon={EventIcon} />
                     <Spacer />
                     <OrderCard value={open_orders} title="Open Orders" to={{
                         pathname: "/orders",
-                        search: `filter=${JSON.stringify({ status: 'Released', ship_from: 'Edison', ship_date: today_date()})}`
+                        search: `filter=${JSON.stringify({ status: 'Released', ship_from: location, ship_date: today_date()})}`
                     }}
                                icon={ArrowDropDownCircleIcon} />
                     <Spacer />
                     <OrderCard value={closed_orders} title="Closed Orders" to={{
                         pathname: "/orders",
-                        search: `filter=${JSON.stringify({ status: 'Fulfilled', ship_from: 'Edison', ship_date: today_date()})}`
+                        search: `filter=${JSON.stringify({ status: 'Fulfilled', ship_from: location, ship_date: today_date()})}`
                     }}
                                icon={CheckCircleIcon} />
                 </div>
