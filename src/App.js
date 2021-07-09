@@ -11,7 +11,7 @@ import configData from "./config.json";
 //const dataProvider = simpleRestProvider('http://10.30.30.13:8000/');
 const dataProvider = simpleRestProvider(configData.apiUrl);
 const App = () => (
-    <Admin authProvider={authProvider} customRoutes={customRoutes} layout={MyLayout} dataProvider={dataProvider} dashboard={Dashboard}
+    <Admin authProvider={authProvider} customRoutes={customRoutes} layout={MyLayout} dataProvider={dataProvider}
            disableTelemetry>
         <Resource name="orders" list={OrderList} edit={OrderEdit} options={{ label: "Orders" }} />
     </Admin>

@@ -13,7 +13,13 @@ const Menu = ({ onMenuClick, logout }) => {
     const resources = useSelector(getResources);
     return (
         <div>
-            <DashboardMenuItem onClick={onMenuClick} primaryText="Edison" sidebarIsOpen={open} />
+            <MenuItemLink
+                to="/dashboard-edison"
+                primaryText="Edison"
+                leftIcon={<DashboardIcon />}
+                onClick={onMenuClick}
+                sidebarIsOpen={open}
+            />
             <MenuItemLink
                 to="/dashboard-bronx"
                 primaryText="Bronx"

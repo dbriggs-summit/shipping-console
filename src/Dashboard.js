@@ -26,13 +26,15 @@ const Dashboard = (props) => {
     const dataProvider = useDataProvider();
     const [state, setState] = useState({});
     const version = useVersion();
+    const filter = location === '' ? { ship_date: today_date()} :
+        {ship_from: location, ship_date: today_date()};
     const fetchOrders = useCallback(async () =>{
         const {data}  = await dataProvider.getList(
           'orders',
             {
                 pagination: { page: 1, perPage: 9999},
                 sort: { field: 'id', order: 'DESC'},
-                filter: {ship_from: location, ship_date: today_date()},
+                filter: filter,
             }
         );
         const aggregations = data
@@ -94,7 +96,7 @@ const Dashboard = (props) => {
         <div style={styles.flex}>
             <div style={styles.leftCol}>
                 <div style={styles.flex}>
-                    <Title title="Shipping Console" />
+                    <Title title={"Shipping Console: "+ location} />
                     <OrderCard value={all_orders} title="Total Orders" to={{
                         pathname: "/orders",
                         search: `filter=${JSON.stringify({ ship_from: location, ship_date: today_date()})}`

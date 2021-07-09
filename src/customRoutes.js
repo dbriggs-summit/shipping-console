@@ -10,5 +10,14 @@ export default [
     </Route>,
     <Route exact path="/dashboard-ed50d">
         <Dashboard dash_loc="ED50D" />
+    </Route>,
+    <Route exact path="/dashboard-invoice">
+        <Dashboard dash_loc="" />
+    </Route>,
+    <Route exact path="/dashboard-edison">
+        <Dashboard dash_loc="Edison" />
+    </Route>,
+    <Route exact path="/">
+        <Dashboard dash_loc="Edison" />
     </Route>
 ];
