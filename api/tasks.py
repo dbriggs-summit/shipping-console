@@ -4,6 +4,151 @@ from sqlalchemy import exc
 from exceptions import CancelledOrderException, OrderDoesNotExistException, InvalidStatusException
 import logging
 from logging.config import dictConfig
+import json
+
+
+def orders_poll():
+    with db.get_dyna_db().connect() as con:
+        rs = con.execute(
+            f"""select h.invoiid as id, 
+                h.shipvia as ship_via, 
+                h.OrderId as order_id,
+                c.Name as cust_name,
+                h.x04472474_ShippedDate as ship_date,
+                isnull(h.PONum, '') as po_number,
+                case when h.invoitype = 1 then 'Invoiced'
+                    when h.invoitype = 50 then 'Estimate'
+                    when h.invoitype = 51 then 'Open'
+                    else 'Unknown' end as order_type,
+                w.WarehouseId as ship_from,
+                case when (x04472474_PendingCancellation = 1  or usrCancelled = 1) then 'Cancelled'
+                        when (x04472474_BLStatus = 'Closed' or 
+                            x04472474_BLStatus = 'Fulfilled') then 'Fulfilled'
+                        when x04472474_Delayed = 1 then 'Delayed'
+                        when (x04472474_BLStatus is NULL or 
+                            x04472474_BLStatus <> 'Closed') then 'Released'
+                    end as 'status',
+                d.Qty as qty,
+                d.usrBarcodeScanCount as qty_scanned,
+                isnull(i.UPCCode,'') as upc_code,
+                i.ItemId as item_id,
+                d.InInvoiDetId as line_id
+            from InvoiHdr as h inner join InvoiDet as d on h.InInvoiId = d.ExInvoiId
+            inner join Item as i on d.ExItemId = i.InItemId
+            inner join Warehouse as w on d.usrShipFromWarehouse = w.InWarehouseId
+            inner join Cust as c on h.ExCustID = c.InCustId
+            where h.[InvoiType] = 51 AND 
+                d.[usrShipFromWarehouse] in (1, 4, 8) AND h.[x04472474_Shipped] = 1 AND 
+                i.itemid not in ('j4g','j5u','x1','j4', 'j8') AND
+                c.custid not in ('zemp')
+        """).fetchall()
+    new_orders = order_prep(rs)
+    db_insert(new_orders, 'dashboard_orders')
+
+
+def invoices_poll(config):
+    try:
+        if config.mode == 'development':
+            date = '\'2021-05-25\''
+        else:
+            date = 'cast(getdate() as date)'
+    except KeyError:
+        date = 'cast(getdate() as date)'
+
+    with db.get_dyna_db().connect() as con:
+        rs = con.execute(
+            f"""select h.invoiid as id, 
+                h.shipvia as ship_via, 
+                h.OrderId as order_id,
+                c.Name as cust_name,
+                h.x04472474_ShippedDate as ship_date,
+                isnull(h.PONum, '') as po_number,
+                case when h.invoitype = 1 then 'Invoiced'
+                    when h.invoitype = 50 then 'Estimate'
+                    when h.invoitype = 51 then 'Open'
+                    else 'Unknown' end as order_type,
+                w.WarehouseId as ship_from,
+                case when (x04472474_PendingCancellation = 1  or usrCancelled = 1) then 'Cancelled'
+					when h.InvoiType = 1 then 'Invoiced'
+                        when (x04472474_BLStatus = 'Closed' or 
+                            x04472474_BLStatus = 'Fulfilled') then 'Fulfilled'
+                        when x04472474_Delayed = 1 then 'Delayed'
+                        when (x04472474_BLStatus is NULL or 
+                            x04472474_BLStatus <> 'Closed') then 'Released'
+                    end as 'status',
+                d.Qty as qty,
+                d.usrBarcodeScanCount as qty_scanned,
+                isnull(i.UPCCode,'') as upc_code,
+                i.ItemId as item_id,
+                d.InInvoiDetId as line_id
+            from InvoiHdr as h inner join InvoiDet as d on h.InInvoiId = d.ExInvoiId
+            inner join Item as i on d.ExItemId = i.InItemId
+            inner join Warehouse as w on d.usrShipFromWarehouse = w.InWarehouseId
+            inner join Cust as c on h.ExCustID = c.InCustId
+            where ((h.[InvoiType] = 51 AND h.x04472474_ShippedDate < {date}) or (h.InvoiType = 1 and InvoiDate = {date})) and
+				x04472474_Delayed <> 1 and
+                d.[usrShipFromWarehouse] in (1, 4, 8) AND h.[x04472474_Shipped] = 1 AND 
+                i.itemid not in ('j4g','j5u','x1','j4', 'j8', 'RETURN', 'k89') AND
+                c.custid not in ('zemp')
+        """).fetchall()
+    new_orders = order_prep(rs)
+    db_insert(new_orders, 'dashboard_invoices')
+
+
+def order_prep(rs):
+    new_orders = []
+    idx = 0
+    order_list = {}  # store pos so we can insert if lines aren't in order
+    for line in rs:
+        # look for unique header record
+        if line.id not in order_list:
+            new_orders.append({  # insert header record
+                "id": line['id'],
+                "cust_name": line['cust_name'].replace("'", "''") if line['cust_name'] is not None else '',
+                "ship_via": line['ship_via'].replace("'", "''") if line['ship_via'] is not None else '',
+                "order_id": line['order_id'],
+                "ship_date": line['ship_date'].strftime("%Y-%m-%d"),
+                "order_type": line['order_type'],
+                "status": line['status'],
+                "ship_from": line['ship_from'],
+                "po_number": line['po_number'].replace("'", "''"),
+                "lines": []
+            })
+            order_list[line['id']] = idx
+            idx += 1
+
+        new_orders[order_list[line['id']]]["lines"].append({
+            "qty": str(line['qty']),
+            "qty_scanned": str(line['qty_scanned']),
+            "upc_code": line['upc_code'],
+            "item_id": line['item_id'],
+            "line_id": line['line_id']
+        })
+    return new_orders
+
+
+def db_insert(new_orders, table):
+    Session = sessionmaker(bind=db.get_db())
+    session = Session()
+    valid_tables = {'dashboard_orders': 1, 'dashboard_invoices': 1}
+
+    try:
+        if valid_tables[table] != 1:
+            logging.error('table is not valid')
+    except LookupError:
+        logging.error('table does not exist')
+        return
+
+    try:
+        session.execute(f"delete from {table}")
+        for item in new_orders:
+            session.execute(f"insert into {table} values({item['id']}, '{json.dumps(item)}')")
+        session.commit()
+    except exc.SQLAlchemyError as e:
+        logging.error(e)
+        session.rollback()
+    finally:
+        session.close()
 
 
 def activate_logging():
