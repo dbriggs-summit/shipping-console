@@ -33,6 +33,55 @@ def order_poll():
     invoices_poll(config)
 
 
+def order_filter(output, filter_value):
+    if filter_value and filter_value.strip('}{') != '':
+        filter_dict = json.loads(filter_value)
+        print(filter_dict)
+        try:
+            if 'q' in filter_dict:
+                output = fulltext_search(filter_dict['q'], output)
+            else:
+                for name in filter_dict.keys():
+                    output = list(filter(lambda x: x[name] == filter_dict[name], output))
+        except (KeyError, IndexError):
+            pass
+    return output
+
+
+def order_sort(output, sort_value):
+    if sort_value:
+        sort_args = sort_value.strip('][').strip('"').split(',')
+        rever = False
+        sort_parm = sort_args[0].strip('"')
+        if sort_args[1].strip('"') == 'DESC':
+            rever = True
+        try:
+            output = sorted(output, key=lambda x: x[sort_parm], reverse=rever)
+        except KeyError:
+            logging.error(f'Key {sort_parm} does not exist')
+    return output
+
+
+def order_range(output, range_value):
+    end = len(output)
+    if range_value:
+        total_size = len(output)
+        range_args = range_value.strip('][').split(',')
+
+        try:  # if begin and end aren't ints, make them 0 and len
+            begin = int(range_args[0])
+        except TypeError:
+            begin = 0
+        try:
+            end = int(range_args[1]) + 1  # end is # of items to
+        except TypeError:  # return, not list range
+            end = total_size
+        if end > len(output):  # if range is too long, wrap to max length
+            end = total_size
+        output = output[begin:end]
+    return output, end
+
+
 # POST is unsupported because we don't allow new orders
 @app.route('/orders', methods=['GET', 'OPTIONS'])
 def orders():
@@ -57,48 +106,11 @@ def orders():
         output = js
         if output:
             begin = 0
-            end = len(output)
+
+            output = order_filter(output, _filter)
             total_size = len(output)
-
-            if _filter and _filter.strip('}{') != '':
-                filter_dict = json.loads(_filter)
-                print(filter_dict)
-                try:
-                    if 'q' in filter_dict:
-                        output = fulltext_search(filter_dict['q'], output)
-                    else:
-                        for name in filter_dict.keys():
-                            output = list(filter(lambda x: x[name] == filter_dict[name], output))
-                    end = len(output)
-                    total_size = len(output)
-                except (KeyError, IndexError):
-                    pass
-
-            if _sort:
-                sort_args = _sort.strip('][').strip('"').split(',')
-                rever = False
-                sort_parm = sort_args[0].strip('"')
-                if sort_args[1].strip('"') == 'DESC':
-                    rever = True
-                try:
-                    output = sorted(output, key=lambda x: x[sort_parm], reverse=rever)
-                except KeyError:
-                    logging.error(f'Key {sort_parm} does not exist')
-
-            if _range:
-                range_args = _range.strip('][').split(',')
-
-                try:  # if begin and end aren't ints, make them 0 and len
-                    begin = int(range_args[0])
-                except TypeError:
-                    begin = 0
-                try:
-                    end = int(range_args[1]) + 1  # end is # of items to
-                except TypeError:  # return, not list range
-                    end = total_size
-                if end > len(output):  # if range is too long, wrap to max length
-                    end = total_size
-                output = output[begin:end]
+            output = order_sort(output, _sort)
+            output, end = order_range(output, _range)
 
             session.close()
 
@@ -181,6 +193,83 @@ def order(order_id):
     elif request.method == 'GET':
         # return json for one order
         result = session.execute("select order_json from dashboard_orders where id=':order_id'",
+                                 {'order_id': order_id})
+        session.close()
+        js = result_process(result.fetchone())
+        if js:
+            response = build_cors_response(js)
+            return response
+        else:
+            return build_cors_response('No Data')
+    else:
+        session.close()
+    return build_cors_response('No Data')
+
+
+@app.route('/invoices', methods=['GET', 'OPTIONS'])
+def invoices():
+    Session = sessionmaker(bind=db.get_db())
+    session = Session()
+    if request.method == 'OPTIONS':
+        session.close()
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS, GET'
+        return response
+
+    if request.method == 'GET' or 'OPTIONS':
+        # return json for one order
+        _sort = request.args.get('sort')
+        _range = request.args.get('range')
+        _filter = request.args.get('filter')
+
+        result = session.execute("select invoice_json from dashboard_invoices order by id")
+
+        # pull order out of the tuple resultProxy returns
+        js = result_process(result.fetchall())
+        output = js
+        if output:
+            begin = 0
+
+            output = order_filter(output, _filter)
+            total_size = len(output)
+            output = order_sort(output, _sort)
+            output, end = order_range(output, _range)
+
+            session.close()
+
+            response = build_cors_response(output)
+            response.headers['Content-Range'] = f'invoices {begin}-{end}/{total_size}'
+            response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
+            return response
+        else:
+            response = build_cors_response([{'id': 0}])
+            response.headers['Content-Range'] = 'invoices 0-0/0'
+            response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
+            return response
+    session.close()
+    return
+
+
+@app.route('/invoices/<int:order_id>', methods=['GET', 'PUT', 'OPTIONS', 'DELETE'])
+def invoice(order_id):
+    Session = sessionmaker(bind=db.get_db())
+    session = Session()
+    if request.method == 'OPTIONS':
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS, GET, PUT'
+        session.close()
+        return response
+    elif request.method == 'PUT':
+        # deleting orders is unsupported
+        session.close()
+        return
+    elif request.method == 'DELETE':
+        # deleting orders is unsupported
+        session.close()
+        return
+    elif request.method == 'GET':
+        # return json for one order
+        result = session.execute("select invoice_json from dashboard_invoices where id=':order_id'",
                                  {'order_id': order_id})
         session.close()
         js = result_process(result.fetchone())

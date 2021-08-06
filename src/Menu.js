@@ -34,6 +34,13 @@ const Menu = ({ onMenuClick, logout }) => {
                 onClick={onMenuClick}
                 sidebarIsOpen={open}
             />
+            <MenuItemLink
+                to="/dashboard-invoice"
+                primaryText="Invoice Progress"
+                leftIcon={<DashboardIcon />}
+                onClick={onMenuClick}
+                sidebarIsOpen={open}
+            />
             {resources.map(resource => (
                 <MenuItemLink
                     key={resource.name}

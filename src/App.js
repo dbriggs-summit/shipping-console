@@ -5,6 +5,7 @@ import Dashboard from "./Dashboard";
 import MyLayout from "./MyLayout";
 import customRoutes from "./customRoutes";
 import { OrderEdit, OrderList } from "./orders";
+import { InvoiceEdit, InvoiceList } from "./invoices";
 import authProvider from "./authProvider";
 import configData from "./config.json";
 
@@ -14,6 +15,7 @@ const App = () => (
     <Admin authProvider={authProvider} customRoutes={customRoutes} layout={MyLayout} dataProvider={dataProvider}
            disableTelemetry>
         <Resource name="orders" list={OrderList} edit={OrderEdit} options={{ label: "Orders" }} />
+        <Resource name="invoices" list={InvoiceList} edit={InvoiceEdit} options={{ label: "Invoices" }} />
     </Admin>
 );
 
