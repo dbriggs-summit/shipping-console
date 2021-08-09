@@ -42,7 +42,7 @@ const Dashboard = (props) => {
             .reduce(
                 (stats, order) => {
 
-                    if(order.ship_via in stats.ship_vias === false) {
+                    if(!(order.ship_via in stats.ship_vias)) {
                         stats.ship_vias[order.ship_via] = [order.ship_via,0,0,0,0];
                     }
 
@@ -62,6 +62,7 @@ const Dashboard = (props) => {
                         stats.invoiced_orders++;
                         stats.all_orders++;
                         stats.ship_vias[order.ship_via][3]++;
+                        stats.ship_vias[order.ship_via][4]++;
                     }
                     return stats;
                 },{
@@ -101,30 +102,68 @@ const Dashboard = (props) => {
         <div style={styles.flex}>
             <div style={styles.leftCol}>
                 <div style={styles.flex}>
-                    <Title title={"Shipping Console: "+ location} />
-                    <OrderCard value={all_orders} title="Total Orders" to={{
-                        pathname: "/" + type,
-                        search: `filter=${JSON.stringify({ ship_from: location, ship_date: today_date()})}`
-                    }}
-                               icon={EventIcon} />
+                    <Title title={ type === "orders" ? "Shipping Console: "+ location : "Invoice Progress"} />
+                    {
+                        type === 'invoices' ?
+                        <OrderCard value={all_orders} title="Total Orders" to={{
+                            pathname: "/" + type,
+                            search: `filter=${JSON.stringify({})}`
+                        }}
+                                   icon={EventIcon}/>
+                            :
+                        <OrderCard value={all_orders} title="Total Orders" to={{
+                            pathname: "/" + type,
+                            search: `filter=${JSON.stringify({ship_from: location, ship_date: today_date()})}`
+                        }}
+                                   icon={EventIcon}/>
+                    }
                     <Spacer />
-                    <OrderCard value={open_orders} title="Open Orders" to={{
-                        pathname: "/" + type,
-                        search: `filter=${JSON.stringify({ status: 'Released', ship_from: location, ship_date: today_date()})}`
-                    }}
-                               icon={ArrowDropDownCircleIcon} />
+                    {
+                        type === 'invoices' ?
+                        <OrderCard value={open_orders} title="Open Orders" to={{
+                            pathname: "/" + type,
+                            search: `filter=${JSON.stringify({status: 'Released'})}`
+                        }}
+                                   icon={ArrowDropDownCircleIcon}/>
+                            :
+                        <OrderCard value={open_orders} title="Open Orders" to={{
+                            pathname: "/" + type,
+                            search: `filter=${JSON.stringify({
+                                status: 'Released',
+                                ship_from: location,
+                                ship_date: today_date()
+                            })}`
+                        }}
+                                   icon={ArrowDropDownCircleIcon}/>
+                    }
                     <Spacer />
-                    <OrderCard value={closed_orders} title="Closed Orders" to={{
-                        pathname: "/" + type,
-                        search: `filter=${JSON.stringify({ status: 'Fulfilled', ship_from: location, ship_date: today_date()})}`
-                    }}
-                               icon={CheckCircleIcon} />
-                    {type === 'invoices' && <Spacer />}
-                    {type === 'invoices' && <OrderCard value={invoiced_orders} title="Invoiced Orders" to={{
-                        pathname: "/" + type,
-                        search: `filter=${JSON.stringify({ status: 'Invoiced', ship_from: location, ship_date: today_date()})}`
-                    }}
-                               icon={CheckCircleIcon} /> }
+                    {
+                        type === 'invoices' ?
+                        <OrderCard value={closed_orders} title="Closed Orders" to={{
+                            pathname: "/" + type,
+                            search: `filter=${JSON.stringify({status: 'Fulfilled'})}`
+                        }}
+                                   icon={CheckCircleIcon}/>
+                            :
+                        <OrderCard value={closed_orders} title="Closed Orders" to={{
+                            pathname: "/" + type,
+                            search: `filter=${JSON.stringify({
+                                status: 'Fulfilled',
+                                ship_from: location,
+                                ship_date: today_date()
+                            })}`
+                        }}
+                                   icon={CheckCircleIcon}/>
+                    }
+                    <Spacer />
+                    {
+                        type === 'invoices' &&
+                        <OrderCard value={invoiced_orders} title="Invoiced Orders" to={{
+                            pathname: "/" + type,
+                            search: `filter=${JSON.stringify({status: 'Invoiced'})}`
+                        }}
+                                   icon={CheckCircleIcon}/>
+                    }
                 </div>
                 <VerticalSpacer />
                 <ShipViaGrid value={ship_vias} location={location} type={type} />
