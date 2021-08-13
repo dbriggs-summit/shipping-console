@@ -155,7 +155,7 @@ const Dashboard = (props) => {
                         }}
                                    icon={CheckCircleIcon}/>
                     }
-                    <Spacer />
+                    { type === 'invoices' && <Spacer /> }
                     {
                         type === 'invoices' &&
                         <OrderCard value={invoiced_orders} title="Invoiced Orders" to={{

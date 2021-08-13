@@ -15,7 +15,7 @@ const inv_columns = [
     {field: 'total_orders', headerName: 'Total Orders', type: 'number', width: 145},
     {field: 'open_orders', headerName: 'Open Orders', type: 'number', width: 145},
     {field: 'closed_orders', headerName: 'Closed Orders', type: 'number', width: 145},
-    {field: 'invoiced_orders', headerName: 'Invoiced Orders', type: 'number', width: 145},
+    {field: 'invoiced_orders', headerName: 'Invoiced', type: 'number', width: 145},
 ];
 
 
