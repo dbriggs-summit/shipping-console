@@ -1,5 +1,3 @@
-# TODO: better CORS support
-# TODO: support filtering in /orders
 import math
 
 from flask import Flask, request, jsonify
@@ -301,10 +299,14 @@ def scan_confirms():
                                      {'order_id': order_id.strip('"')})
             session.close()
             js = result_process(result.fetchone())
-            print(js)
+            #print(js)
             if js is not None:
                 if js['status'] == 'Cancelled':
                     raise CancelledOrderException(order_id)
+                for line in js['lines']:
+                    if float(line['qty_scanned']) >= float(line['qty']) and upc == line['upc_code']:
+                        raise OrderDoesNotExistException(order_id)
+
             else:
                 raise OrderDoesNotExistException(order_id)
 
