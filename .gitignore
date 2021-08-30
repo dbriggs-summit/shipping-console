@@ -30,3 +30,7 @@ __pycache__
 /yarn.lock
 /api/apilogs.log
 /api/tasklogs.log
+/src/config.json
+/api/apilogs.log.1
+/api/dump.rdb
+/dump.rdb
