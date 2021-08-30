@@ -504,7 +504,7 @@ def freight_quote():
 
             if 'Parcel' in size_list:
                 size_list['Parcel'] = int(math.ceil(size_list['Parcel']))
-                print(size_list['Parcel'])
+                # print(size_list['Parcel'])
 
             for size in size_list.keys():
                 item_rate += item_matrix[gfp_zone][total_pkg_units][size] * size_list[size]

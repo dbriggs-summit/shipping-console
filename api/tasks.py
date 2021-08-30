@@ -86,7 +86,7 @@ def invoices_poll(config):
             inner join Warehouse as w on d.usrShipFromWarehouse = w.InWarehouseId
             inner join Cust as c on h.ExCustID = c.InCustId
             where ((h.[InvoiType] = 51 AND h.x04472474_ShippedDate < {date}) or (h.InvoiType = 1 and InvoiDate = {date})) and
-				x04472474_Delayed <> 1 and
+				(h.x04472474_ShippedDate > h.x04472474_DelayedDate OR x04472474_Delayed <> 1) and
                 d.[usrShipFromWarehouse] in (1, 4, 8) AND h.[x04472474_Shipped] = 1 AND 
                 i.itemid not in ('j4g','j5u','x1','j4', 'j8', 'RETURN', 'k89') AND
                 c.custid not in ('zemp')
