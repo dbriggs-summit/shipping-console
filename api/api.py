@@ -13,8 +13,9 @@ from exceptions import CancelledOrderException, OrderDoesNotExistException
 from logging.config import dictConfig
 import logging
 import config
-from gfp import item_matrix, order_matrix, nyc_zip
+from freight_tables import item_matrix, order_matrix, nyc_zip, single_dropship, dropship_zone, multi_parcel_dropship
 from math import ceil
+from functools import reduce
 
 app = Flask(__name__)
 
@@ -299,7 +300,7 @@ def scan_confirms():
                                      {'order_id': order_id.strip('"')})
             session.close()
             js = result_process(result.fetchone())
-            #print(js)
+            # print(js)
             if js is not None:
                 if js['status'] == 'Cancelled':
                     raise CancelledOrderException(order_id)
@@ -427,89 +428,166 @@ def order_status():
         return build_cors_response({'orders': ''})
 
 
+def gfp_quote(api_request):
+    # set up GFPZone, Number of Units, and Size for each line item
+    # Determine flat charge for the entire shipment
+    # For each line, determine that unit's contribution
+    # Return shipment charge + each line charge
+    gfp_zone = -1
+    total_units = 0
+    flat_rate = 0
+    item_rate = 0
+    if api_request['shipToState'] == 'NY':
+        if api_request['shipToZip'] in nyc_zip:  # NYC
+            gfp_zone = 1
+    elif api_request['GFPZone'] == "2":
+        gfp_zone = 2
+    elif api_request['GFPZone'] == "3":
+        gfp_zone = 3
+    elif api_request['GFPZone'] == "4":
+        gfp_zone = 4
+
+    if gfp_zone == -1:
+        return build_cors_response({'total': 0})
+
+    for line in api_request['lines']:
+        if line['unitSize'] and line['unitSize'] != '':
+            if line['unitSize'] != 'Parcel':
+                total_units += float(line['itemQty'])
+            else:
+                total_units += float(line['itemQty']) * 0.25
+    total_units = int(ceil(total_units))
+
+    total_pkg_units = '1'
+
+    if 1 < total_units <= 3:
+        total_pkg_units = '2-3'
+    elif 3 < total_units <= 6:
+        total_pkg_units = '4-6'
+    elif 6 < total_units <= 11:
+        total_pkg_units = '7-11'
+    elif 11 < total_units <= 15:
+        total_pkg_units = '12-15'
+    elif 15 < total_units <= 19:
+        total_pkg_units = '16-19'
+    elif 19 < total_units <= 23:
+        total_pkg_units = '20-23'
+    elif 23 < total_units <= 29:
+        total_pkg_units = '24-29'
+    elif 29 < total_units <= 35:
+        total_pkg_units = '30-35'
+    elif 35 < total_units <= 47:
+        total_pkg_units = '36-47'
+    elif total_units > 47:
+        total_pkg_units = '48+'
+
+    try:
+        flat_rate = order_matrix[gfp_zone][total_pkg_units]
+    except KeyError:
+        pass
+
+    size_list = {}
+    if flat_rate == 0:
+        for line in api_request['lines']:
+            if line['unitSize'] and line['unitSize'] != '':
+                if line['unitSize'] != 'Parcel':
+                    if line['unitSize'] in size_list:
+                        size_list[line['unitSize']] += int(line['itemQty'])
+                    else:
+                        size_list[line['unitSize']] = int(line['itemQty'])
+                else:
+                    if line['unitSize'] in size_list:
+                        size_list[line['unitSize']] += int(line['itemQty']) * 0.25
+                    else:
+                        size_list[line['unitSize']] = int(line['itemQty']) * 0.25
+
+        if 'Parcel' in size_list:
+            size_list['Parcel'] = int(math.ceil(size_list['Parcel']))
+            # print(size_list['Parcel'])
+
+        for size in size_list.keys():
+            item_rate += item_matrix[gfp_zone][total_pkg_units][size] * size_list[size]
+        return flat_rate + item_rate
+
+
+def drop_ship_quote(api_request):
+    # check to see if it's over-sized
+    # check to see if it's LTL
+    # if one piece, determine its freight factor
+    # sum total weight and dim weight (round up to nearest 100 pounds)
+    # lookup zone
+    # look up rate on table
+    total_qty = reduce(lambda x, y: x + y, [int(x['itemQty']) for x in api_request['lines']])
+    total_weight = reduce(lambda x, y: x + y, [float(x['itemWeight']) for x in api_request['lines']])
+    max_weight = reduce(lambda x, y: x if x > y else y, [float(x['itemHeight']) for x in api_request['lines']])
+    total_dim = reduce(lambda x, y: x + y, [float(x['itemHeight']) for x in api_request['lines']]) * \
+                reduce(lambda x, y: x + y, [float(x['itemWidth']) for x in api_request['lines']]) * \
+                reduce(lambda x, y: x + y, [float(x['itemDepth']) for x in api_request['lines']])
+    total_height = reduce(lambda x, y: x + y, [float(x['itemHeight']) for x in api_request['lines']])
+    total_dim_weight = total_dim / 139.0
+    item_rate = 0
+    zone = dropship_zone[api_request['shipToState']]
+
+    if total_qty == 1:
+        # single-piece shipment
+        if api_request['lines'][0]['itemNumber'][:3] == 'C48' or \
+                api_request['lines'][0]['itemNumber'][:3] == 'C60':
+            freight_factor = '7'
+        else:
+            if total_weight > 400.0:
+                freight_factor = '9'
+            elif total_weight > 300.0:
+                freight_factor = '8'
+            elif total_weight > 200.0:
+                freight_factor = '7'
+            # elif item is a range or wall oven freight_factor = '5A'
+            elif total_weight > 150.0:
+                freight_factor = '6'
+            elif total_weight > 70.0 and total_height > 30.0:
+                freight_factor = '5'
+            elif total_dim_weight > 75.0:
+                freight_factor = '4A'
+            elif total_dim_weight > 60.0:
+                freight_factor = '4'
+            elif total_dim_weight > 30.0 or total_weight > 30.0:
+                freight_factor = '3'
+            elif total_dim_weight > 20.0 or total_weight > 20.0:
+                freight_factor = '2'
+            else:
+                freight_factor = '1'
+        item_rate = single_dropship[freight_factor][zone]
+    else:
+        # multi-piece shipment
+        if total_dim / 1728.0 > 700.0:
+            item_rate = 0
+            # throw error because shipment is too large
+        else:
+            # check LTL or Parcel
+            if max_weight > 70.0 or total_dim > 18000.0 or total_weight > 80.0 or total_dim_weight > 250.0:  # LTL
+                pass
+            else:   # parcel
+                if max(total_weight, total_dim_weight) < 50.0:
+                    freight_factor = 'up to 50'
+                elif max(total_weight, total_dim_weight) < 80.0:
+                    freight_factor = '50 to 79'
+                elif max(total_weight, total_dim_weight) < 120.0:
+                    freight_factor = '80 to 119'
+                else:
+                    freight_factor = '120 to 150'
+                item_rate = multi_parcel_dropship[freight_factor][zone]
+
+    return item_rate
+
+
 @app.route('/freight_quote', methods=['PUT'])
 def freight_quote():
     if request.method == 'PUT':
-        # set up GFPZone, Number of Units, and Size for each line item
-        # Determine flat charge for the entire shipment
-        # For each line, determine that unit's contribution
-        # Return shipment charge + each line charge
-        gfp_zone = -1
-        total_units = 0
-        flat_rate = 0
-        item_rate = 0
-        if request.json['shipToState'] == 'NY':
-            if request.json['shipToZip'] in nyc_zip:  # NYC
-                gfp_zone = 1
-        elif request.json['GFPZone'] == "2":
-            gfp_zone = 2
-        elif request.json['GFPZone'] == "3":
-            gfp_zone = 3
-        elif request.json['GFPZone'] == "4":
-            gfp_zone = 4
+        if request.json['custFreightType'] == "Distributor":
+            rate_total = gfp_quote(request.json)
+        if request.json['custFreightType'] == "Drop Ship":
+            rate_total = drop_ship_quote(request.json)
 
-        if gfp_zone == -1:
-            return build_cors_response({'total': 0})
-
-        for line in request.json['lines']:
-            if line['unitSize'] and line['unitSize'] != '':
-                if line['unitSize'] != 'Parcel':
-                    total_units += float(line['itemQty'])
-                else:
-                    total_units += float(line['itemQty']) * 0.25
-        total_units = int(ceil(total_units))
-
-        total_pkg_units = '1'
-
-        if 1 < total_units <= 3:
-            total_pkg_units = '2-3'
-        elif 3 < total_units <= 6:
-            total_pkg_units = '4-6'
-        elif 6 < total_units <= 11:
-            total_pkg_units = '7-11'
-        elif 11 < total_units <= 15:
-            total_pkg_units = '12-15'
-        elif 15 < total_units <= 19:
-            total_pkg_units = '16-19'
-        elif 19 < total_units <= 23:
-            total_pkg_units = '20-23'
-        elif 23 < total_units <= 29:
-            total_pkg_units = '24-29'
-        elif 29 < total_units <= 35:
-            total_pkg_units = '30-35'
-        elif 35 < total_units <= 47:
-            total_pkg_units = '36-47'
-        elif total_units > 47:
-            total_pkg_units = '48+'
-
-        try:
-            flat_rate = order_matrix[gfp_zone][total_pkg_units]
-        except KeyError:
-            pass
-
-        size_list = {}
-        if flat_rate == 0:
-            for line in request.json['lines']:
-                if line['unitSize'] and line['unitSize'] != '':
-                    if line['unitSize'] != 'Parcel':
-                        if line['unitSize'] in size_list:
-                            size_list[line['unitSize']] += int(line['itemQty'])
-                        else:
-                            size_list[line['unitSize']] = int(line['itemQty'])
-                    else:
-                        if line['unitSize'] in size_list:
-                            size_list[line['unitSize']] += int(line['itemQty']) * 0.25
-                        else:
-                            size_list[line['unitSize']] = int(line['itemQty']) * 0.25
-
-            if 'Parcel' in size_list:
-                size_list['Parcel'] = int(math.ceil(size_list['Parcel']))
-                # print(size_list['Parcel'])
-
-            for size in size_list.keys():
-                item_rate += item_matrix[gfp_zone][total_pkg_units][size] * size_list[size]
-
-        return build_cors_response({'total': flat_rate + item_rate})
+        return build_cors_response({'total': rate_total})
 
 
 @app.errorhandler(401)
