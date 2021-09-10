@@ -524,8 +524,8 @@ def drop_ship_quote(api_request):
                 reduce(lambda x, y: x + y, [float(x['itemWidth']) for x in api_request['lines']]) * \
                 reduce(lambda x, y: x + y, [float(x['itemDepth']) for x in api_request['lines']])
     total_height = reduce(lambda x, y: x + y, [float(x['itemHeight']) for x in api_request['lines']])
+
     total_dim_weight = total_dim / 139.0
-    item_rate = 0
     zone = dropship_zone[api_request['shipToState']]
 
     if total_qty == 1:
@@ -540,7 +540,7 @@ def drop_ship_quote(api_request):
                 freight_factor = '8'
             elif total_weight > 200.0:
                 freight_factor = '7'
-            # elif item is a range or wall oven freight_factor = '5A'
+            # todo: elif item is a range or wall oven freight_factor = '5A'
             elif total_weight > 150.0:
                 freight_factor = '6'
             elif total_weight > 70.0 and total_height > 30.0:
@@ -558,14 +558,56 @@ def drop_ship_quote(api_request):
         item_rate = single_dropship[freight_factor][zone]
     else:
         # multi-piece shipment
-        if total_dim / 1728.0 > 700.0:
+        if (total_dim / 1728.0) > 700.0:
             item_rate = 0
-            # throw error because shipment is too large
+            # todo: throw error because shipment is too large
         else:
             # check LTL or Parcel
             if max_weight > 70.0 or total_dim > 18000.0 or total_weight > 80.0 or total_dim_weight > 250.0:  # LTL
-                pass
-            else:   # parcel
+
+                whole_pallet = reduce(lambda x, y: y + 1 if x['itemWeight'] > 70 and x['itemHeight'] > 42 else y,
+                                      api_request['lines'])
+                half_pallet = math.ceil(reduce(lambda x, y: y + 0.5 if x['itemWeight'] > 70
+                                        and x['itemHeight'] <= 42 else y, api_request['lines']))
+                small_pallet = math.ceil(reduce(lambda x, y: x + y, [float(x['itemHeight'])
+                                                                     if x['itemWeight'] < 70 else 0.0 for x in
+                                                                     api_request['lines']]) *
+                                         reduce(lambda x, y: x + y,
+                                                [float(x['itemWidth']) if x['itemWeight'] < 70 else 0.0
+                                                 for x in api_request['lines']]) *
+                                         reduce(lambda x, y: x + y,
+                                                [float(x['itemDepth']) if x['itemWeight'] < 70 else 0.0
+                                                 for x in api_request['lines']]) / 38000)
+                total_pallet = whole_pallet + half_pallet + small_pallet
+                total_weight += total_pallet * 25.0
+
+                if total_pallet <= 9:
+                    if total_weight < 100:
+                        freight_factor = 'up to 100'
+                    elif total_weight < 200:
+                        freight_factor = '100 to 199'
+                    elif total_weight < 300:
+                        freight_factor = '200 to 299'
+                    elif total_weight < 400:
+                        freight_factor = '300 to 399'
+                    elif total_weight < 500:
+                        freight_factor = '400 to 499'
+                    elif total_weight < 600:
+                        freight_factor = '500 to 599'
+                    elif total_weight < 700:
+                        freight_factor = '600 to 699'
+                    elif total_weight < 800:
+                        freight_factor = '700 to 799'
+                    elif total_weight < 900:
+                        freight_factor = '800 to 899'
+                    elif total_weight < 1000:
+                        freight_factor = '900 to 999'
+                    else:
+                        freight_factor = 'over 1000'
+
+                else:  # todo: reject order for being too big
+                    pass
+            else:  # parcel
                 if max(total_weight, total_dim_weight) < 50.0:
                     freight_factor = 'up to 50'
                 elif max(total_weight, total_dim_weight) < 80.0:
@@ -574,7 +616,8 @@ def drop_ship_quote(api_request):
                     freight_factor = '80 to 119'
                 else:
                     freight_factor = '120 to 150'
-                item_rate = multi_parcel_dropship[freight_factor][zone]
+
+            item_rate = multi_parcel_dropship[freight_factor][zone]
 
     return item_rate
 

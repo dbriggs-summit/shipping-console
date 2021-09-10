@@ -422,7 +422,7 @@ multi_parcel_dropship = {
 }
 
 multi_ltl_dropship = {
-    '70 to 99': {
+    'up to 100': {
         1: 135,
         2: 140,
         3: 145
