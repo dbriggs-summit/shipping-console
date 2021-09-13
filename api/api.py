@@ -13,7 +13,8 @@ from exceptions import CancelledOrderException, OrderDoesNotExistException
 from logging.config import dictConfig
 import logging
 import config
-from freight_tables import item_matrix, order_matrix, nyc_zip, single_dropship, dropship_zone, multi_parcel_dropship
+from freight_tables import item_matrix, order_matrix, nyc_zip, single_dropship, dropship_zone, multi_parcel_dropship, \
+    multi_ltl_dropship
 from math import ceil
 from functools import reduce
 
@@ -518,14 +519,18 @@ def drop_ship_quote(api_request):
     # lookup zone
     # look up rate on table
     total_qty = reduce(lambda x, y: x + y, [int(x['itemQty']) for x in api_request['lines']])
-    total_weight = reduce(lambda x, y: x + y, [float(x['itemWeight']) for x in api_request['lines']])
-    max_weight = reduce(lambda x, y: x if x > y else y, [float(x['itemHeight']) for x in api_request['lines']])
-    total_dim = reduce(lambda x, y: x + y, [float(x['itemHeight']) for x in api_request['lines']]) * \
-                reduce(lambda x, y: x + y, [float(x['itemWidth']) for x in api_request['lines']]) * \
-                reduce(lambda x, y: x + y, [float(x['itemDepth']) for x in api_request['lines']])
-    total_height = reduce(lambda x, y: x + y, [float(x['itemHeight']) for x in api_request['lines']])
+    total_weight = reduce(lambda x, y: x + y, [float(x['itemWeight']) * int(x['itemQty'])
+                                               for x in api_request['lines']])
+    max_weight = reduce(lambda x, y: x if x > y else y, [float(x['itemHeight']) * int(x['itemQty'])
+                                                         for x in api_request['lines']])
+    total_volume = reduce(lambda x, y: x + y, [float(x['itemHeight']) * float(x['itemDepth']) * float(x['itemWidth']) *
+                                               int(x['itemQty']) for x in api_request['lines']])
+    total_height = reduce(lambda x, y: x + y, [float(x['itemHeight']) * int(x['itemQty'])
+                                               for x in api_request['lines']])
 
-    total_dim_weight = total_dim / 139.0
+    total_dim_weight = total_volume / 139.0
+    print(f'total qty: {total_qty}, total weight: {total_weight}, max weight: {max_weight}, '
+          f'total volume: {total_volume}, total height: {total_height}, total dim weight: {total_dim_weight}')
     zone = dropship_zone[api_request['shipToState']]
 
     if total_qty == 1:
@@ -558,28 +563,32 @@ def drop_ship_quote(api_request):
         item_rate = single_dropship[freight_factor][zone]
     else:
         # multi-piece shipment
-        if (total_dim / 1728.0) > 700.0:
+        if (total_volume / 1728.0) > 700.0:
             item_rate = 0
             # todo: throw error because shipment is too large
         else:
             # check LTL or Parcel
-            if max_weight > 70.0 or total_dim > 18000.0 or total_weight > 80.0 or total_dim_weight > 250.0:  # LTL
+            if max_weight > 70.0 or total_volume > 18000.0 or total_weight > 80.0 or total_dim_weight > 250.0:  # LTL
+                whole_pallet = 0
+                half_pallet = 0
+                small_pallet = 0
+                for x in api_request['lines']:
+                    if int(x['itemWeight']) > 70 and int(x['itemHeight']) > 42:
+                        whole_pallet += 1 * int(x['itemQty'])
+                    if int(x['itemWeight']) > 70.0 and int(x['itemHeight']) <= 42:
+                        half_pallet += 0.5 * int(x['itemQty'])
+                    elif int(x['itemWeight']) < 70:
+                        small_pallet += float(x['itemHeight']) * float(x['itemWidth']) * float(x['itemDepth']) \
+                                        * int(x['itemQty'])
 
-                whole_pallet = reduce(lambda x, y: y + 1 if x['itemWeight'] > 70 and x['itemHeight'] > 42 else y,
-                                      api_request['lines'])
-                half_pallet = math.ceil(reduce(lambda x, y: y + 0.5 if x['itemWeight'] > 70
-                                        and x['itemHeight'] <= 42 else y, api_request['lines']))
-                small_pallet = math.ceil(reduce(lambda x, y: x + y, [float(x['itemHeight'])
-                                                                     if x['itemWeight'] < 70 else 0.0 for x in
-                                                                     api_request['lines']]) *
-                                         reduce(lambda x, y: x + y,
-                                                [float(x['itemWidth']) if x['itemWeight'] < 70 else 0.0
-                                                 for x in api_request['lines']]) *
-                                         reduce(lambda x, y: x + y,
-                                                [float(x['itemDepth']) if x['itemWeight'] < 70 else 0.0
-                                                 for x in api_request['lines']]) / 38000)
+                half_pallet = math.ceil(half_pallet)
+                small_pallet = math.ceil(small_pallet / 38000.0)
                 total_pallet = whole_pallet + half_pallet + small_pallet
+
                 total_weight += total_pallet * 25.0
+
+                print(f'total pallets: {total_pallet} -- whole pallets: {whole_pallet}, half pallets: {half_pallet}, '
+                      f'small pallets: {small_pallet}  Updated total weight: {total_weight}')
 
                 if total_pallet <= 9:
                     if total_weight < 100:
@@ -604,7 +613,7 @@ def drop_ship_quote(api_request):
                         freight_factor = '900 to 999'
                     else:
                         freight_factor = 'over 1000'
-
+                    item_rate = multi_ltl_dropship[freight_factor][zone]
                 else:  # todo: reject order for being too big
                     pass
             else:  # parcel
@@ -616,9 +625,7 @@ def drop_ship_quote(api_request):
                     freight_factor = '80 to 119'
                 else:
                     freight_factor = '120 to 150'
-
-            item_rate = multi_parcel_dropship[freight_factor][zone]
-
+                item_rate = multi_parcel_dropship[freight_factor][zone]
     return item_rate
 
 
