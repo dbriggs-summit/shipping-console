@@ -13,8 +13,9 @@ from exceptions import CancelledOrderException, OrderDoesNotExistException
 from logging.config import dictConfig
 import logging
 import config
-from freight_tables import item_matrix, order_matrix, nyc_zip, single_dropship, dropship_zone, multi_parcel_dropship, \
-    multi_ltl_dropship
+from freight_tables import item_matrix, order_matrix, single_dropship, dropship_zone, multi_parcel_dropship, \
+    multi_ltl_dropship, dealer_zone
+from zipcode_data import zip_codes
 from math import ceil
 from functools import reduce
 
@@ -429,27 +430,24 @@ def order_status():
         return build_cors_response({'orders': ''})
 
 
-def gfp_quote(api_request):
+def dealer_quote(api_request):
     # set up GFPZone, Number of Units, and Size for each line item
     # Determine flat charge for the entire shipment
     # For each line, determine that unit's contribution
     # Return shipment charge + each line charge
-    gfp_zone = -1
     total_units = 0
     flat_rate = 0
     item_rate = 0
-    if api_request['shipToState'] == 'NY':
-        if api_request['shipToZip'] in nyc_zip:  # NYC
-            gfp_zone = 1
-    elif api_request['GFPZone'] == "2":
-        gfp_zone = 2
-    elif api_request['GFPZone'] == "3":
-        gfp_zone = 3
-    elif api_request['GFPZone'] == "4":
-        gfp_zone = 4
+    ship_to_zip = api_request['shipToZip']
+    try:
+        ship_to_state = zip_codes[ship_to_zip]['state_code']
+        zone = dealer_zone[ship_to_state]
+    except KeyError:
+        return 0
 
-    if gfp_zone == -1:
-        return build_cors_response({'total': 0})
+    if ship_to_state == 'NY':
+        if zip_codes[ship_to_zip]['county'] in ['Queens', 'Bronx', 'Kings', 'New York', 'Richmond']:  # NYC
+            zone = 1
 
     for line in api_request['lines']:
         if line['unitSize'] and line['unitSize'] != '':
@@ -483,12 +481,12 @@ def gfp_quote(api_request):
         total_pkg_units = '48+'
 
     try:
-        flat_rate = order_matrix[gfp_zone][total_pkg_units]
+        flat_rate = order_matrix[zone][total_pkg_units]
     except KeyError:
         pass
 
-    size_list = {}
     if flat_rate == 0:
+        size_list = {}
         for line in api_request['lines']:
             if line['unitSize'] and line['unitSize'] != '':
                 if line['unitSize'] != 'Parcel':
@@ -505,10 +503,16 @@ def gfp_quote(api_request):
         if 'Parcel' in size_list:
             size_list['Parcel'] = int(math.ceil(size_list['Parcel']))
             # print(size_list['Parcel'])
-
         for size in size_list.keys():
-            item_rate += item_matrix[gfp_zone][total_pkg_units][size] * size_list[size]
-        return flat_rate + item_rate
+            item_rate += item_matrix[zone][total_pkg_units][size] * size_list[size]
+
+    try:
+        if api_request['liftGate'] == 'True':
+            flat_rate += 75
+    except KeyError:
+        pass
+
+    return flat_rate + item_rate
 
 
 def drop_ship_quote(api_request):
@@ -528,10 +532,22 @@ def drop_ship_quote(api_request):
     total_height = reduce(lambda x, y: x + y, [float(x['itemHeight']) * int(x['itemQty'])
                                                for x in api_request['lines']])
 
-    total_dim_weight = total_volume / 139.0
+    total_dim_weight = total_volume / 139.0 * 1.3  # add 30% for inefficient packing
     print(f'total qty: {total_qty}, total weight: {total_weight}, max weight: {max_weight}, '
           f'total volume: {total_volume}, total height: {total_height}, total dim weight: {total_dim_weight}')
-    zone = dropship_zone[api_request['shipToState']]
+
+    try:
+        ship_to_zip = api_request['shipToZip']
+        ship_to_state = zip_codes[ship_to_zip]['state_code']
+    except ValueError:
+        return 0
+
+    try:
+        zone, surcharge = dropship_zone[ship_to_state]
+    except KeyError:
+        zone = -1
+    if zone == -1:
+        return 0
 
     if total_qty == 1:
         # single-piece shipment
@@ -626,16 +642,18 @@ def drop_ship_quote(api_request):
                 else:
                     freight_factor = '120 to 150'
                 item_rate = multi_parcel_dropship[freight_factor][zone]
-    return item_rate
+    return item_rate + surcharge
 
 
 @app.route('/freight_quote', methods=['PUT'])
 def freight_quote():
     if request.method == 'PUT':
-        if request.json['custFreightType'] == "Distributor":
-            rate_total = gfp_quote(request.json)
-        if request.json['custFreightType'] == "Drop Ship":
+        if request.json['custFreightType'] == "Dealer":
+            rate_total = dealer_quote(request.json)
+        elif request.json['custFreightType'] == "Drop Ship":
             rate_total = drop_ship_quote(request.json)
+        else:
+            return build_cors_response(f"Error: Not a valid freight type")
 
         return build_cors_response({'total': rate_total})
 
