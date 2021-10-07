@@ -35,7 +35,8 @@ const ScanLabels = () => {
             newScan.append('upc_code', upc_code);
             newScan.append('order_id', order_id);
             //fetch(`http://10.30.30.13:8000/scan_confirm`, { method: 'PUT', body: newScan })
-            fetch(configData.mode === "production" ? configData.apiUrl + `/scan_confirm` : `/scan_confirm`, { method: 'PUT', body: newScan })
+            fetch(configData.mode === "production" ? configData.apiUrl + `/scan_confirm` : `/scan_confirm`,
+                { method: 'PUT', body: newScan })
                 .then(handleErrors)
                 .then(response => response.text())
                 .then(text => {

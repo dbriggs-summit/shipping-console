@@ -49,6 +49,21 @@ def order_filter(output, filter_value):
     return output
 
 
+def item_filter(output, filter_value):
+    if filter_value and filter_value.strip('}{') != '':
+        filter_dict = json.loads(filter_value)
+        print(filter_dict)
+        try:
+            if 'q' in filter_dict:
+                output = fulltext_item_search(filter_dict['q'], output)
+            else:
+                for name in filter_dict.keys():
+                    output = list(filter(lambda x: x[name] == filter_dict[name], output))
+        except (KeyError, IndexError):
+            pass
+    return output
+
+
 def order_sort(output, sort_value):
     if sort_value:
         sort_args = sort_value.strip('][').strip('"').split(',')
@@ -397,6 +412,88 @@ def scan_confirm(job_key):
         return "Error on job", 202
 
 
+@app.route('/items', methods=['GET', 'OPTIONS'])
+def items():
+    Session = sessionmaker(bind=db.get_dyna_db())
+    session = Session()
+    if request.method == 'OPTIONS':
+        session.close()
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS, GET'
+        return response
+
+    if request.method == 'GET' or 'OPTIONS':
+        # return json for one order
+        _sort = request.args.get('sort')
+        _range = request.args.get('range')
+        _filter = request.args.get('filter')
+
+        result = session.execute("select itemid, Descr1, isnull(x04472490_Weight, 0) weight, "
+                                 "isnull(x04472490_Height, 0) height, isnull(x04472490_Width, 0) width, "
+                                 "isnull(x04472490_Depth, 0) depth from item order by itemid")
+
+        # pull order out of the tuple resultProxy returns
+        js = result_item_process(result.fetchall())
+        output = js
+        if output:
+            begin = 0
+
+            output = item_filter(output, _filter)
+            total_size = len(output)
+            output = order_sort(output, _sort)
+            output, end = order_range(output, _range)
+
+            session.close()
+
+            response = build_cors_response(output)
+            response.headers['Content-Range'] = f'items {begin}-{end}/{total_size}'
+            response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
+            return response
+        else:
+            response = build_cors_response([{'id': 0}])
+            response.headers['Content-Range'] = 'items 0-0/0'
+            response.headers['Access-Control-Expose-Headers'] = 'Content-Range'
+            return response
+    session.close()
+    return
+
+
+@app.route('/items/<string:item_id>', methods=['GET', 'PUT', 'OPTIONS', 'DELETE'])
+def item(item_id):
+    Session = sessionmaker(bind=db.get_dyna_db())
+    session = Session()
+    if request.method == 'OPTIONS':
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS, GET, PUT'
+        session.close()
+        return response
+    elif request.method == 'PUT':
+        # deleting orders is unsupported
+        session.close()
+        return
+    elif request.method == 'DELETE':
+        # deleting orders is unsupported
+        session.close()
+        return
+    elif request.method == 'GET':
+        # return json for one order
+        # this is a sql injection risk, but parameterized queries through sqlalchemy don't seem to work with pyodbc
+        result = session.execute(f"select itemid, Descr1, isnull(x04472490_Weight, 0) weight, "
+                                 f"isnull(x04472490_Height, 0) height, isnull(x04472490_Width, 0) width, "
+                                 f"isnull(x04472490_Depth, 0) depth from item where itemid = '{item_id}'")
+        js = result_item_process(result.fetchone())
+
+        session.close()
+        if js:
+            response = build_cors_response(js)
+            return response
+        else:
+            return build_cors_response('No Data')
+    else:
+        session.close()
+    return build_cors_response('No Data')
+
+
 @app.route('/order_status', methods=['GET'])
 def order_status():
     po_num = request.args.get('po')
@@ -631,7 +728,7 @@ def drop_ship_quote(api_request):
                         freight_factor = 'over 1000'
                     item_rate = multi_ltl_dropship[freight_factor][zone]
                 else:  # todo: reject order for being too big
-                    pass
+                    return 0
             else:  # parcel
                 if max(total_weight, total_dim_weight) < 50.0:
                     freight_factor = 'up to 50'
@@ -698,12 +795,32 @@ def fulltext_search(text, order_list):
     return output_list
 
 
+def fulltext_item_search(text, item_list):
+    lower_text = text.lower()
+    output_list = []
+    for o in item_list:
+        if lower_text in o['item_id'].lower() or \
+                lower_text in o['descr1'].lower():
+            output_list.append(o)
+    return output_list
+
+
 def result_process(result):
     if result:
         if len(result) > 1:
             return list(map(lambda x: x[0], result))
         else:
             return result[0]
+
+
+def result_item_process(result):
+    if result:
+        if isinstance(result, list):
+            return [{'item_id': x[0], 'descr1': x[1], 'weight': x[2], 'height': x[3], 'width': x[4], 'depth': x[5]}
+                    for x in result]
+        else:
+            return [{'item_id': result[0], 'descr1': result[1], 'weight': result[2], 'height': result[3],
+                     'width': result[4], 'depth': result[5]}]
 
 
 def build_cors_response(output, status='', **kwargs):

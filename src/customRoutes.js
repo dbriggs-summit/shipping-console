@@ -2,6 +2,7 @@ import * as React from "react";
 import { Route } from 'react-router-dom';
 import ScanLabels from "./ScanLabels";
 import Dashboard from "./Dashboard";
+import FreightQuote from "./FreightQuote";
 
 export default [
     <Route exact path="/confirm-scan" component={ScanLabels} />,
@@ -19,5 +20,6 @@ export default [
     </Route>,
     <Route exact path="/">
         <Dashboard dash_loc="Edison" type="orders" />
-    </Route>
+    </Route>,
+    <Route exact path="/freight-quote" component={FreightQuote} />
 ];
