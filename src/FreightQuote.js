@@ -3,6 +3,28 @@ import { useNotify, fetchStart, fetchEnd } from 'react-admin';
 import { useDispatch } from "react-redux";
 import configData from "./config.json";
 import {Fragment} from "react";
+import {
+    InputAdornment,
+    IconButton,
+    TextField as MuiTextField,
+    TextFieldProps,
+    Theme,
+    InputLabel,
+    MenuItem,
+    FormControl,
+    Select,
+    Button,
+    Divider,
+    Container,
+    Card,
+    CardHeader,
+    Box, makeStyles
+} from '@material-ui/core';
+import LocalShippingIcon from "@material-ui/icons/LocalShipping";
+import CardWithIcon from "./CardWithIcon";
+
+const Spacer = () => <span style={{ width: '1em' }} />;
+const VerticalSpacer = () => <span style={{ height: '1em' }} />;
 
 function handleErrors(response) {
     if (!response.ok) {
@@ -11,9 +33,24 @@ function handleErrors(response) {
     return response;
 }
 
-const FreightQuote = () => {
+const useStyles = makeStyles(
+    theme => ({
+        output: { width: theme.spacing(32) },
+        form: {
+            width: theme.spacing(32),
+            paddingTop: 10,
+            paddingBottom: 10,
+            display: "block"
+        }
+    }),
+    { name: 'FreightQuote' }
+);
+
+const FreightQuote = (props) => {
+
     const dispatch = useDispatch();
     const notify = useNotify();
+    const classes = useStyles(props);
     const [freightAmount, setFreightAmount] = useState(0);
     const [shipToZip, setShipToZip] = useState('');
     const [custFreightType, setCustFreightType] = useState('Drop Ship');
@@ -116,80 +153,88 @@ const FreightQuote = () => {
 
 
   return (
-      <>
-          <h1>Freight Quote</h1>
-          <form onSubmit={handleSubmit}>
-              <label>
-                  Zip Code:
-                  <input onChange={event => handleInputChange(event)}
-                      name="shipToZip" type="text" value={shipToZip} />
-              </label>
-              <br />
-              <label>
-                  Freight Type:
-                  <select onChange={event => handleInputChange(event)} name="custFreightType" value={custFreightType}>
-                      <option value="Dealer">Dealer</option>
-                      <option value="Drop Ship">Drop Ship</option>
-                      <option value="White Glove">White Glove</option>
-                  </select>
-              </label>
-              <div className="form-row">
-                  {lines.map((lines, index) => (
-                      <Fragment key={`${lines}~${index}`}>
-                          <div className="form-group col-sm-6">
-                              <label htmlFor="itemNumber">Item Number</label>
-                              <input onChange={event => handleLinesChange(index, event)}onin
-                                     type="text"
-                                     className="form-control"
-                                     id="itemNumber"
-                                     name="itemNumber"
-                                     value={lines.itemNumber}
-                              />
-                          </div>
-                          <div className="form-group col-sm-4">
-                              <label htmlFor="itemQty">Qty</label>
-                              <input onChange={event => handleLinesChange(index, event)}
-                                     type="text"
-                                     className="form-control"
-                                     id="itemQty"
-                                     name="itemQty"
-                                     value={lines.itemQty}
-                              />
-                          </div>
-                          <div className="form-group col-sm-2">
-                              <button onClick={() => handleRemoveFields(index)}
-                                      className="btn btn-link"
-                                      type="button">
-                                  -
-                              </button>
-                              <button onClick={() => handleAddFields(index)}
-                                      className="btn btn-link"
-                                      type="button">
-                                  +
-                              </button>
-                          </div>
-                      </Fragment>
-                  ))}
-              </div>
-              <div className="submit-button">
-                  <button
+      <Container>
+          <Card>
+            <CardHeader title="Freight Quote" />
+          </Card>
+          <Spacer />
+          <FormControl onSubmit={handleSubmit}>
+              <Box className={classes.form}>
+                  <Box className={classes.form}>
+                      <MuiTextField label="Zip Code" onChange={event => handleInputChange(event)}
+                          name="shipToZip" type="text" value={shipToZip} />
+                  </Box>
+                  <Spacer />
+                  <Box className={classes.form}>
+                      <Select label="Freight Type" onChange={event => handleInputChange(event)} name="custFreightType" value={custFreightType}>
+                          <MenuItem value="Dealer">Dealer</MenuItem>
+                          <MenuItem value="Drop Ship">Drop Ship</MenuItem>
+                          <MenuItem value="White Glove">White Glove</MenuItem>
+                      </Select>
+                  </Box>
+              </Box>
+              <Box className={classes.form}>
+                  <div className="form-row">
+                      {lines.map((lines, index) => (
+                          <Fragment key={`${lines}~${index}`}>
+                              <div className="form-group col-sm-6">
+                                  <MuiTextField label="Item Number" onChange={event => handleLinesChange(index, event)}
+                                         type="text"
+                                         className="form-control"
+                                         id="itemNumber"
+                                         name="itemNumber"
+                                         value={lines.itemNumber}
+                                  />
+                              </div>
+                              <div className="form-group col-sm-4">
+                                  <MuiTextField label="Qty" onChange={event => handleLinesChange(index, event)}
+                                         type="text"
+                                         className="form-control"
+                                         id="itemQty"
+                                         name="itemQty"
+                                         value={lines.itemQty}
+                                  />
+                              </div>
+                              <div className="form-group col-sm-2">
+                                  <Button onClick={() => handleRemoveFields(index)}
+                                          className="btn btn-link"
+                                          type="button">
+                                      -
+                                  </Button>
+                                  <Button onClick={() => handleAddFields(index)}
+                                          className="btn btn-link"
+                                          type="button">
+                                      +
+                                  </Button>
+                              </div>
+                            <Divider />
+                          </Fragment>
+
+                      ))}
+                  </div>
+              </Box>
+              <Box sx={{ maxWidth: 200, paddingBottom: 30 }}>
+                  <Button
+                      variant="contained"
                       className="btn btn-primary mr-2"
                       type="submit"
-                      onSubmit={handleSubmit}>
+                      onClick={handleSubmit}>
                       Get Quote
-                  </button>
-              </div>
-              <br />
+                  </Button>
+              </Box>
+          </FormControl>
+          <Box className={classes.output} sx={{ paddingTop: 10 }}>
+              <CardWithIcon title="Your Quote:" subtitle={freightAmount} icon={LocalShippingIcon} />
+          </Box>
+          <VerticalSpacer />
               { configData.mode === "production" ? "" : <pre>
                   {"shipToZip:"} { JSON.stringify(shipToZip, null, 2)},
                   {"custFreightType:"} {JSON.stringify(custFreightType, null, 2)},
                   {"lines:"} {JSON.stringify(lines, null, 2)}
               </pre>}
-              <pre>
-                  Your quote is: ${JSON.stringify(freightAmount, null, 2)}
-              </pre>
-          </form>
-      </>
+
+
+      </Container>
   );
 
 };
