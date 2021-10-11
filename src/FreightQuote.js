@@ -69,7 +69,7 @@ const FreightQuote = () => {
     };
     const handleAddFields = () => {
         const values = [...lines];
-        lines.push({
+        values.push({
             itemNumber: '',
             itemQty: '',
             itemWeight: '0',
