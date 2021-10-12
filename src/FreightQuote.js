@@ -131,7 +131,7 @@ const FreightQuote = (props) => {
             custFreightType: custFreightType,
             lines : lines
         };
-        fetch(configData.mode === "production" ? configData.apiUrl + `/freight_quote` : `/freight_quote`,
+        fetch(configData.mode === "production" ? configData.apiUrl + `freight_quote` : `/freight_quote`,
                   {
                       method: 'PUT',
                       headers: {'Accept': 'application/json','Content-Type': 'application/json'},
