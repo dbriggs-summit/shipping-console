@@ -742,7 +742,7 @@ def drop_ship_quote(api_request):
     return item_rate + surcharge
 
 
-@app.route('/freight_quote', methods=['PUT'])
+@app.route('/freight_quote', methods=['PUT', 'OPTIONS'])
 def freight_quote():
     if request.method == 'OPTIONS':
         response = build_cors_response('')
