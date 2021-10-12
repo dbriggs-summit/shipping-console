@@ -143,7 +143,7 @@ const FreightQuote = (props) => {
                       setFreightAmount(json.total);
                   })
                   .catch((e) => {
-                    notify('Problem getting item data: ' + e,'warning',
+                    notify('Problem getting quote: ' + e,'warning',
                         {},false, 5000)
                   })
                   .finally(() => {

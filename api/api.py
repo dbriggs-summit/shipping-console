@@ -744,6 +744,10 @@ def drop_ship_quote(api_request):
 
 @app.route('/freight_quote', methods=['PUT'])
 def freight_quote():
+    if request.method == 'OPTIONS':
+        response = build_cors_response('')
+        response.headers['Allow'] = 'OPTIONS', 'PUT'
+        return response
     if request.method == 'PUT':
         if request.json['custFreightType'] == "Dealer":
             rate_total = dealer_quote(request.json)
