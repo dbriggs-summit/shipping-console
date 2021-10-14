@@ -1,6 +1,6 @@
 import math
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, abort
 import json
 import db
 from sqlalchemy import exc
@@ -488,7 +488,7 @@ def item(item_id):
             response = build_cors_response(js)
             return response
         else:
-            return build_cors_response('No Data')
+            abort(404)
     else:
         session.close()
     return build_cors_response('No Data')

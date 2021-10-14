@@ -35,8 +35,18 @@ function handleErrors(response) {
 
 const useStyles = makeStyles(
     theme => ({
-        output: { width: theme.spacing(32) },
+        output: {
+            width: theme.spacing(32),
+            paddingTop: 50,
+            display: "block"
+        },
         form: {
+            width: theme.spacing(32),
+            paddingTop: 10,
+            paddingBottom: 10,
+            display: "block"
+        },
+        line: {
             width: theme.spacing(32),
             paddingTop: 10,
             paddingBottom: 10,
@@ -51,8 +61,12 @@ const FreightQuote = (props) => {
     const dispatch = useDispatch();
     const notify = useNotify();
     const classes = useStyles(props);
+    const [loading, setLoading] = useState(false);
     const [freightAmount, setFreightAmount] = useState(0);
-    const [shipToZip, setShipToZip] = useState('');
+    const [shipToZip, setShipToZip] = useState({
+        "text":'',
+        "errorText": ""
+    });
     const [custFreightType, setCustFreightType] = useState('Drop Ship');
     const [lines, setLines] = useState(
     [
@@ -63,7 +77,8 @@ const FreightQuote = (props) => {
                 "itemHeight": "",
                 "itemWidth": "",
                 "itemDepth": "",
-                "unitSize": "Full Size"
+                "unitSize": "Full Size",
+                "errorText": ""
             }
         ]
     );
@@ -71,35 +86,51 @@ const FreightQuote = (props) => {
         const values = [...lines];
         if (event.target.name === "itemNumber") {
               lines[index].itemNumber = event.target.value;
+              setLoading(true);
               dispatch(fetchStart());
               fetch(configData.mode === "production" ? configData.apiUrl + `/items/` + lines[index].itemNumber :
                       `/items/` + lines[index].itemNumber,
                   {method: 'GET' })
-                  .then(handleErrors)
+                  .then(response => {
+                      if(!response.ok){
+                          throw Error(response.statusText);
+                      }
+                      return response;
+                  })
                   .then(response => response.json())
                   .then(json => {
                       lines[index].itemWidth = json[0].width;
                       lines[index].itemDepth = json[0].depth;
                       lines[index].itemHeight = json[0].height;
                       lines[index].itemWeight = json[0].weight;
+                      lines[index].errorText = "";
                   })
                   .catch((e) => {
-                    notify('Problem getting item data: ' + e,'warning',
-                        {},false, 5000)
+                      lines[index].itemWidth = 0;
+                      lines[index].itemDepth = 0;
+                      lines[index].itemHeight = 0;
+                      lines[index].itemWeight = 0;
+                      lines[index].errorText = "Please enter a valid item";
+                      /*notify('Problem getting quote: ' + e,'warning',
+                        {},false, 5000)*/
                   })
                   .finally(() => {
+                      setLoading(false);
                       dispatch(fetchEnd());
                   })
+            setLines(values);
         } else {
             lines[index].itemQty = event.target.value;
+            setLines(values);
         }
-
-        setLines(values);
     };
     const handleInputChange = (event) => {
-        const [zipValue, freightValue] = [...shipToZip, custFreightType];
+        //const [zipValue, freightValue] = [...shipToZip, custFreightType];
         if (event.target.name === "shipToZip") {
-            setShipToZip(event.target.value);
+            if (/(^\d{5}$)|(^\d{5}-\d{4}$)/.test(event.target.value) == false) {
+                setShipToZip({ text: "", errorText: "Please enter a valid zip code"});
+            }
+            setShipToZip({ text: event.target.value, errorText: ""});
         } else if (event.target.name === "custFreightType") {
             setCustFreightType(event.target.value);
         }
@@ -113,7 +144,8 @@ const FreightQuote = (props) => {
             itemHeight: '0',
             itemDepth: '0',
             itemWidth: '0',
-            unitSize: 'Full Size'
+            unitSize: 'Full Size',
+            errorText: ""
         });
         setLines(values);
     };
@@ -125,12 +157,15 @@ const FreightQuote = (props) => {
     };
     const handleSubmit = (data) => {
         data.preventDefault();
-        dispatch(fetchStart());
+        if (shipToZip.errorText !== "") {
+            return;
+        }
         const formBody = {
-            shipToZip: shipToZip,
+            shipToZip: shipToZip.text,
             custFreightType: custFreightType,
             lines : lines
         };
+        dispatch(fetchStart());
         fetch(configData.mode === "production" ? configData.apiUrl + `freight_quote` : `/freight_quote`,
                   {
                       method: 'PUT',
@@ -162,7 +197,9 @@ const FreightQuote = (props) => {
               <Box className={classes.form}>
                   <Box className={classes.form}>
                       <MuiTextField label="Zip Code" onChange={event => handleInputChange(event)}
-                          name="shipToZip" type="text" value={shipToZip} />
+                                    error = { shipToZip.errorText === "" ? false : true }
+                                    helperText={shipToZip.errorText}
+                          name="shipToZip" type="text" required value={shipToZip.text} />
                   </Box>
                   <Spacer />
                   <Box className={classes.form}>
@@ -176,25 +213,25 @@ const FreightQuote = (props) => {
               <Box className={classes.form}>
                   <div className="form-row">
                       {lines.map((lines, index) => (
+
                           <Fragment key={`${lines}~${index}`}>
-                              <div className="form-group col-sm-6">
+                              <Box className={classes.line}>
                                   <MuiTextField label="Item Number" onChange={event => handleLinesChange(index, event)}
-                                         type="text"
+                                         type="text" required
                                          className="form-control"
+                                         error = { lines.errorText === "" ? false : true }
                                          id="itemNumber"
                                          name="itemNumber"
+                                         helperText={lines.errorText}
                                          value={lines.itemNumber}
                                   />
-                              </div>
-                              <div className="form-group col-sm-4">
                                   <MuiTextField label="Qty" onChange={event => handleLinesChange(index, event)}
-                                         type="text"
+                                         type="text" required
                                          className="form-control"
                                          id="itemQty"
                                          name="itemQty"
                                          value={lines.itemQty}
                                   />
-                              </div>
                               <div className="form-group col-sm-2">
                                   <Button onClick={() => handleRemoveFields(index)}
                                           className="btn btn-link"
@@ -208,12 +245,14 @@ const FreightQuote = (props) => {
                                   </Button>
                               </div>
                             <Divider />
-                          </Fragment>
+                          </Box>
+                              </Fragment>
+
 
                       ))}
                   </div>
               </Box>
-              <Box sx={{ maxWidth: 200, paddingBottom: 30 }}>
+              <Box className={classes.form}>
                   <Button
                       variant="contained"
                       className="btn btn-primary mr-2"
@@ -223,12 +262,12 @@ const FreightQuote = (props) => {
                   </Button>
               </Box>
           </FormControl>
-          <Box className={classes.output} sx={{ paddingTop: 10 }}>
+          <Box className={classes.output}>
               <CardWithIcon title="Your Quote:" subtitle={freightAmount} icon={LocalShippingIcon} />
           </Box>
           <VerticalSpacer />
               { configData.mode === "production" ? "" : <pre>
-                  {"shipToZip:"} { JSON.stringify(shipToZip, null, 2)},
+                  {"shipToZip:"} { JSON.stringify(shipToZip.text, null, 2)},
                   {"custFreightType:"} {JSON.stringify(custFreightType, null, 2)},
                   {"lines:"} {JSON.stringify(lines, null, 2)}
               </pre>}
