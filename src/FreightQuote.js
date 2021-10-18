@@ -82,6 +82,7 @@ const FreightQuote = (props) => {
             }
         ]
     );
+                  console.log(lines.length);
     const handleLinesChange = (index, event) => {
         const values = [...lines];
         if (event.target.name === "itemNumber") {
@@ -93,23 +94,27 @@ const FreightQuote = (props) => {
                   {method: 'GET' })
                   .then(response => {
                       if(!response.ok){
-                          throw Error(response.statusText);
+                          throw Error("Please enter a valid item");
                       }
                       return response;
                   })
                   .then(response => response.json())
                   .then(json => {
+                      if (json[0].weight === 0 || json[0].width === 0) {
+                          lines[index].errorText = "Item has no weights and/or dims. Please contact inventory";
+                      } else {
+                          lines[index].errorText = "";
+                      }
                       lines[index].itemWidth = json[0].width;
                       lines[index].itemDepth = json[0].depth;
                       lines[index].itemHeight = json[0].height;
                       lines[index].itemWeight = json[0].weight;
-                      lines[index].errorText = "";
                   })
                   .catch((e) => {
-                      lines[index].itemWidth = 0;
-                      lines[index].itemDepth = 0;
-                      lines[index].itemHeight = 0;
-                      lines[index].itemWeight = 0;
+                      lines[index].itemWidth = "";
+                      lines[index].itemDepth = "";
+                      lines[index].itemHeight = "";
+                      lines[index].itemWeight = "";
                       lines[index].errorText = "Please enter a valid item";
                       /*notify('Problem getting quote: ' + e,'warning',
                         {},false, 5000)*/
@@ -127,8 +132,9 @@ const FreightQuote = (props) => {
     const handleInputChange = (event) => {
         //const [zipValue, freightValue] = [...shipToZip, custFreightType];
         if (event.target.name === "shipToZip") {
-            if (/(^\d{5}$)|(^\d{5}-\d{4}$)/.test(event.target.value) == false) {
-                setShipToZip({ text: "", errorText: "Please enter a valid zip code"});
+            if (/(^\d{5}$)|(^\d{5}-\d{4}$)/.test(event.target.value) === false) {
+                setShipToZip({ text: event.target.value, errorText: "Please enter a valid zip code"});
+                return;
             }
             setShipToZip({ text: event.target.value, errorText: ""});
         } else if (event.target.name === "custFreightType") {
@@ -158,6 +164,15 @@ const FreightQuote = (props) => {
     const handleSubmit = (data) => {
         data.preventDefault();
         if (shipToZip.errorText !== "") {
+            return;
+        }
+        const lineErrors = lines.reduce((sum, curVal) => {
+            if (curVal.errorText !== "") {
+                sum += 1;
+            }
+            return sum;
+        }, 0);
+        if (lineErrors > 0) {
             return;
         }
         const formBody = {
@@ -203,7 +218,8 @@ const FreightQuote = (props) => {
                   </Box>
                   <Spacer />
                   <Box className={classes.form}>
-                      <Select label="Freight Type" onChange={event => handleInputChange(event)} name="custFreightType" value={custFreightType}>
+                      <Select label="Freight Type" onChange={event => handleInputChange(event)} name="custFreightType"
+                              value={custFreightType}>
                           <MenuItem value="Dealer">Dealer</MenuItem>
                           <MenuItem value="Drop Ship">Drop Ship</MenuItem>
                           <MenuItem value="White Glove">White Glove</MenuItem>
