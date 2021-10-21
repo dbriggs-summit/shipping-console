@@ -540,7 +540,7 @@ def dealer_quote(api_request):
         ship_to_state = zip_codes[ship_to_zip]['state_code']
         zone = dealer_zone[ship_to_state]
     except KeyError:
-        return 0
+        return 'Unknown Location'
 
     if ship_to_state == 'NY':
         if zip_codes[ship_to_zip]['county'] in ['Queens', 'Bronx', 'Kings', 'New York', 'Richmond']:  # NYC
@@ -637,14 +637,14 @@ def drop_ship_quote(api_request):
         ship_to_zip = api_request['shipToZip']
         ship_to_state = zip_codes[ship_to_zip]['state_code']
     except ValueError:
-        return 0
+        return 'Unknown Location'
 
     try:
         zone, surcharge = dropship_zone[ship_to_state]
     except KeyError:
         zone = -1
     if zone == -1:
-        return 0
+        return 'Unknown Location'
 
     if total_qty == 1:
         # single-piece shipment
@@ -678,6 +678,7 @@ def drop_ship_quote(api_request):
         # multi-piece shipment
         if (total_volume / 1728.0) > 700.0:
             item_rate = 0
+            return 'Shipment Too Large'
             # todo: throw error because shipment is too large
         else:
             # check LTL or Parcel
@@ -728,7 +729,7 @@ def drop_ship_quote(api_request):
                         freight_factor = 'over 1000'
                     item_rate = multi_ltl_dropship[freight_factor][zone]
                 else:  # todo: reject order for being too big
-                    return 0
+                    return 'Shipment Too Large for LTL'
             else:  # parcel
                 if max(total_weight, total_dim_weight) < 50.0:
                     freight_factor = 'up to 50'
