@@ -24,7 +24,8 @@ def orders_poll():
                 case when (x04472474_PendingCancellation = 1  or usrCancelled = 1) then 'Cancelled'
                         when (x04472474_BLStatus = 'Closed' or 
                             x04472474_BLStatus = 'Fulfilled') then 'Fulfilled'
-                        when x04472474_Delayed = 1 then 'Delayed'
+                        when (x04472474_Delayed = 1 and InvoiHdr.x04472474_ShippedDate <= InvoiHdr.x04472474_DelayedDate) 
+                            then 'Delayed'
                         when (x04472474_BLStatus is NULL or 
                             x04472474_BLStatus <> 'Closed') then 'Released'
                     end as 'status',
