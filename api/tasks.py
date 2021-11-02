@@ -73,7 +73,8 @@ def invoices_poll(config):
 					when h.InvoiType = 1 then 'Invoiced'
                         when (x04472474_BLStatus = 'Closed' or 
                             x04472474_BLStatus = 'Fulfilled') then 'Fulfilled'
-                        when x04472474_Delayed = 1 then 'Delayed'
+                        when (x04472474_Delayed = 1 and h.x04472474_ShippedDate <= h.x04472474_DelayedDate) 
+                            then 'Delayed'
                         when (x04472474_BLStatus is NULL or 
                             x04472474_BLStatus <> 'Closed') then 'Released'
                     end as 'status',
@@ -81,7 +82,8 @@ def invoices_poll(config):
                 d.usrBarcodeScanCount as qty_scanned,
                 isnull(i.UPCCode,'') as upc_code,
                 i.ItemId as item_id,
-                d.InInvoiDetId as line_id
+                d.InInvoiDetId as line_id,
+                h.x04472474_DeliveredDate as delivered_date
             from InvoiHdr as h inner join InvoiDet as d on h.InInvoiId = d.ExInvoiId
             inner join Item as i on d.ExItemId = i.InItemId
             inner join Warehouse as w on d.usrShipFromWarehouse = w.InWarehouseId
@@ -102,8 +104,7 @@ def order_prep(rs):
     order_list = {}  # store pos so we can insert if lines aren't in order
     for line in rs:
         # look for unique header record
-        if line.id not in order_list:
-            new_orders.append({  # insert header record
+        record = {  # insert header record
                 "id": line['id'],
                 "cust_name": line['cust_name'].replace("'", "''") if line['cust_name'] is not None else '',
                 "ship_via": line['ship_via'].replace("'", "''") if line['ship_via'] is not None else '',
@@ -114,7 +115,13 @@ def order_prep(rs):
                 "ship_from": line['ship_from'],
                 "po_number": line['po_number'].replace("'", "''"),
                 "lines": []
-            })
+            }
+        try:
+            record["delivered_date"] = line['delivered_date'].strftime("%Y-%m-%d") if line['delivered_date'] is not None else ''
+        except exc.NoSuchColumnError:
+            pass
+        if line.id not in order_list:
+            new_orders.append(record)
             order_list[line['id']] = idx
             idx += 1
 

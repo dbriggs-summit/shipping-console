@@ -37,6 +37,7 @@ export const InvoiceList = props => (
             <TextField source="status" />
             <TextField source="ship_from" />
             <TextField source="ship_date" options={{ timeZone: 'UTC' }} />
+            <TextField source="delivered_date" />
             <TextField source="ship_via" />
             <ArrayField source="lines"><SingleFieldList><ChipField source="item_id" /></SingleFieldList></ArrayField>
         </Datagrid>
@@ -64,6 +65,7 @@ export const InvoiceEdit = ({permissions, ...props}) => (
                 { id: 'Open', name: 'Open'},
             ]} />
             <DateInput disabled source="ship_date" />
+            <DateInput disabled source="delivered_date" />
             <ArrayInput disabled source="lines"><SimpleFormIterator><TextInput source="item_id" title="Item" />
             <TextInput disabled source="upc_code" title="UPC Code" />
             <TextInput disabled source="qty" title="Qty Ordered" />
