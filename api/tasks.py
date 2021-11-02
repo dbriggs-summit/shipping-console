@@ -83,7 +83,8 @@ def invoices_poll(config):
                 isnull(i.UPCCode,'') as upc_code,
                 i.ItemId as item_id,
                 d.InInvoiDetId as line_id,
-                h.x04472474_DeliveredDate as delivered_date
+                h.x04472474_DeliveredDate as delivered_date,
+                h.x04472474_DelayedDate as delayed_date
             from InvoiHdr as h inner join InvoiDet as d on h.InInvoiId = d.ExInvoiId
             inner join Item as i on d.ExItemId = i.InItemId
             inner join Warehouse as w on d.usrShipFromWarehouse = w.InWarehouseId
@@ -118,6 +119,7 @@ def order_prep(rs):
             }
         try:
             record["delivered_date"] = line['delivered_date'].strftime("%Y-%m-%d") if line['delivered_date'] is not None else ''
+            record["delayed_date"] = line['delayed_date'].strftime("%Y-%m-%d") if line['delayed_date'] is not None else ''
         except exc.NoSuchColumnError:
             pass
         if line.id not in order_list:

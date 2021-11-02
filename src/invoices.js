@@ -66,6 +66,7 @@ export const InvoiceEdit = ({permissions, ...props}) => (
             ]} />
             <DateInput disabled source="ship_date" />
             <DateInput disabled source="delivered_date" />
+            <DateInput disabled source="delayed_date" />
             <ArrayInput disabled source="lines"><SimpleFormIterator><TextInput source="item_id" title="Item" />
             <TextInput disabled source="upc_code" title="UPC Code" />
             <TextInput disabled source="qty" title="Qty Ordered" />
