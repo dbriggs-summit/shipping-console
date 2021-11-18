@@ -480,7 +480,9 @@ def item(item_id):
         # this is a sql injection risk, but parameterized queries through sqlalchemy don't seem to work with pyodbc
         result = session.execute(f"select itemid, Descr1, isnull(x04472490_Weight, 0) weight, "
                                  f"isnull(x04472490_Height, 0) height, isnull(x04472490_Width, 0) width, "
-                                 f"isnull(x04472490_Depth, 0) depth from item where itemid = '{item_id}'")
+                                 f"isnull(x04472490_Depth, 0) depth, isnull(category.descr, '') category from item "
+                                 f"left outer join category on item.excategoryid = category.incategoryid "
+                                 f"where itemid = '{item_id}'")
         js = result_item_process(result.fetchone())
 
         session.close()
@@ -629,9 +631,12 @@ def drop_ship_quote(api_request):
     total_height = reduce(lambda x, y: x + y, [float(x['itemHeight']) * int(x['itemQty'])
                                                for x in api_request['lines']])
 
+    total_cubic_feet = total_volume / 1728.0
+
     total_dim_weight = total_volume / 139.0 * 1.3  # add 30% for inefficient packing
     print(f'total qty: {total_qty}, total weight: {total_weight}, max weight: {max_weight}, '
-          f'total volume: {total_volume}, total height: {total_height}, total dim weight: {total_dim_weight}')
+          f'total volume: {total_volume}, total height: {total_height}, total dim weight: {total_dim_weight}, '
+          f'total cubic feet: {total_cubic_feet}')
 
     try:
         ship_to_zip = api_request['shipToZip']
@@ -651,6 +656,8 @@ def drop_ship_quote(api_request):
         if api_request['lines'][0]['itemNumber'][:3] == 'C48' or \
                 api_request['lines'][0]['itemNumber'][:3] == 'C60':
             freight_factor = '7'
+        elif api_request['lines'][0]['category'] == 'Range' or api_request['lines'][0]['category'] == 'Wall Oven':
+            freight_factor = '5A'
         else:
             if total_weight > 400.0:
                 freight_factor = '9'
@@ -658,7 +665,6 @@ def drop_ship_quote(api_request):
                 freight_factor = '8'
             elif total_weight > 200.0:
                 freight_factor = '7'
-            # todo: elif item is a range or wall oven freight_factor = '5A'
             elif total_weight > 150.0:
                 freight_factor = '6'
             elif total_weight > 70.0 and total_height > 30.0:
@@ -676,10 +682,9 @@ def drop_ship_quote(api_request):
         item_rate = single_dropship[freight_factor][zone]
     else:
         # multi-piece shipment
-        if (total_volume / 1728.0) > 700.0:
+        if total_cubic_feet > 700.0:
             item_rate = 0
             return 'Shipment Too Large'
-            # todo: throw error because shipment is too large
         else:
             # check LTL or Parcel
             if max_weight > 70.0 or total_volume > 18000.0 or total_weight > 80.0 or total_dim_weight > 250.0:  # LTL
@@ -698,6 +703,7 @@ def drop_ship_quote(api_request):
                 half_pallet = math.ceil(half_pallet)
                 small_pallet = math.ceil(small_pallet / 38000.0)
                 total_pallet = whole_pallet + half_pallet + small_pallet
+                extra_units = 0
 
                 total_weight += total_pallet * 25.0
 
@@ -727,8 +733,14 @@ def drop_ship_quote(api_request):
                         freight_factor = '900 to 999'
                     else:
                         freight_factor = 'over 1000'
+                        extra_units = (total_weight - 1000) // 100
+                        print(extra_units)
+
                     item_rate = multi_ltl_dropship[freight_factor][zone]
-                else:  # todo: reject order for being too big
+
+                    if extra_units > 0:
+                        item_rate += extra_units * 20
+                else:
                     return 'Shipment Too Large for LTL'
             else:  # parcel
                 if max(total_weight, total_dim_weight) < 50.0:
@@ -821,11 +833,11 @@ def result_process(result):
 def result_item_process(result):
     if result:
         if isinstance(result, list):
-            return [{'item_id': x[0], 'descr1': x[1], 'weight': x[2], 'height': x[3], 'width': x[4], 'depth': x[5]}
-                    for x in result]
+            return [{'item_id': x[0], 'descr1': x[1], 'weight': x[2], 'height': x[3], 'width': x[4], 'depth': x[5],
+                     'category': x[6]} for x in result]
         else:
             return [{'item_id': result[0], 'descr1': result[1], 'weight': result[2], 'height': result[3],
-                     'width': result[4], 'depth': result[5]}]
+                     'width': result[4], 'depth': result[5], 'category': result[6]}]
 
 
 def build_cors_response(output, status='', **kwargs):

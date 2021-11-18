@@ -78,6 +78,7 @@ const FreightQuote = (props) => {
                 "itemWidth": "",
                 "itemDepth": "",
                 "unitSize": "Full Size",
+                "category": "",
                 "errorText": ""
             }
         ]
@@ -109,12 +110,14 @@ const FreightQuote = (props) => {
                       lines[index].itemDepth = json[0].depth;
                       lines[index].itemHeight = json[0].height;
                       lines[index].itemWeight = json[0].weight;
+                      lines[index].category = json[0].category;
                   })
                   .catch((e) => {
                       lines[index].itemWidth = "";
                       lines[index].itemDepth = "";
                       lines[index].itemHeight = "";
                       lines[index].itemWeight = "";
+                      lines[index].category = "";
                       lines[index].errorText = "Please enter a valid item";
                       /*notify('Problem getting quote: ' + e,'warning',
                         {},false, 5000)*/
@@ -151,6 +154,7 @@ const FreightQuote = (props) => {
             itemDepth: '0',
             itemWidth: '0',
             unitSize: 'Full Size',
+            category: '',
             errorText: ""
         });
         setLines(values);
