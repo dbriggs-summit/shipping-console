@@ -21,7 +21,7 @@ const ScanLabels = () => {
     const notify = useNotify();
     const [loading, setLoading] = useState(false);
     const handleScan = (data) => {
-        if(!data.startsWith("w") || data.split(" ").length !== 3) {
+        if(!(data.startsWith("w") || data.startsWith("W")) || data.split(" ").length !== 3) {
             notify('Please enter a valid matrix label', 'warning',
                 {},false, 5000)
         }
