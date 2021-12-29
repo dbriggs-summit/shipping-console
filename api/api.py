@@ -643,6 +643,8 @@ def drop_ship_quote(api_request):
         ship_to_state = zip_codes[ship_to_zip]['state_code']
     except ValueError:
         return 'Unknown Location'
+    except KeyError:
+        return 'Unknown Location'
 
     try:
         zone, surcharge = dropship_zone[ship_to_state]
@@ -701,7 +703,7 @@ def drop_ship_quote(api_request):
                                         * int(x['itemQty'])
 
                 half_pallet = math.ceil(half_pallet)
-                small_pallet = math.ceil(small_pallet / 38000.0)
+                small_pallet = math.ceil(small_pallet / 51840.0)
                 total_pallet = whole_pallet + half_pallet + small_pallet
                 extra_units = 0
 
