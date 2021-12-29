@@ -21,6 +21,7 @@ import {
     Box, makeStyles
 } from '@material-ui/core';
 import LocalShippingIcon from "@material-ui/icons/LocalShipping";
+import ScaleIcon from '@material-ui/icons/LineWeight';
 import CardWithIcon from "./CardWithIcon";
 
 const Spacer = () => <span style={{ width: '1em' }} />;
@@ -37,7 +38,7 @@ const useStyles = makeStyles(
     theme => ({
         output: {
             width: theme.spacing(32),
-            paddingTop: 50,
+            paddingTop: 40,
             display: "block"
         },
         form: {
@@ -63,6 +64,7 @@ const FreightQuote = (props) => {
     const classes = useStyles(props);
     const [loading, setLoading] = useState(false);
     const [freightAmount, setFreightAmount] = useState(0);
+    const [weight, setWeight] = useState(0);
     const [shipToZip, setShipToZip] = useState({
         "text":'',
         "errorText": ""
@@ -136,7 +138,7 @@ const FreightQuote = (props) => {
         //const [zipValue, freightValue] = [...shipToZip, custFreightType];
         if (event.target.name === "shipToZip") {
             if (/(^\d{5}$)|(^\d{5}-\d{4}$)/.test(event.target.value) === false) {
-                setShipToZip({ text: event.target.value, errorText: "Please enter a valid zip code"});
+                setShipToZip({ text: event.target.value, errorText: "Please enter a zip code within the 50 U.S. States"});
                 return;
             }
             setShipToZip({ text: event.target.value, errorText: ""});
@@ -195,6 +197,7 @@ const FreightQuote = (props) => {
                   .then(response => response.json())
                   .then(json => {
                       setFreightAmount(json.total);
+                      setWeight(json.weight);
                   })
                   .catch((e) => {
                     notify('Problem getting quote: ' + e,'warning',
@@ -284,6 +287,9 @@ const FreightQuote = (props) => {
           </FormControl>
           <Box className={classes.output}>
               <CardWithIcon title="Your Quote:" subtitle={freightAmount} icon={LocalShippingIcon} />
+          </Box>
+          <Box className={classes.output}>
+              <CardWithIcon title="Total Weight:" subtitle={weight} icon={ScaleIcon} />
           </Box>
           <VerticalSpacer />
               { configData.mode === "production" ? "" : <pre>

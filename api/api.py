@@ -611,7 +611,7 @@ def dealer_quote(api_request):
     except KeyError:
         pass
 
-    return flat_rate + item_rate
+    return {'total':flat_rate + item_rate}
 
 
 def drop_ship_quote(api_request):
@@ -642,16 +642,16 @@ def drop_ship_quote(api_request):
         ship_to_zip = api_request['shipToZip']
         ship_to_state = zip_codes[ship_to_zip]['state_code']
     except ValueError:
-        return 'Unknown Location'
+        return {'total': 'Unknown Location', 'weight': total_weight}
     except KeyError:
-        return 'Unknown Location'
+        return {'total': 'Unknown Location', 'weight': total_weight}
 
     try:
         zone, surcharge = dropship_zone[ship_to_state]
     except KeyError:
         zone = -1
     if zone == -1:
-        return 'Unknown Location'
+        return {'total': 'Unknown Location', 'weight': total_weight}
 
     if total_qty == 1:
         # single-piece shipment
@@ -686,7 +686,7 @@ def drop_ship_quote(api_request):
         # multi-piece shipment
         if total_cubic_feet > 700.0:
             item_rate = 0
-            return 'Shipment Too Large'
+            return {'total': 'Shipment Too Large', 'weight': total_weight}
         else:
             # check LTL or Parcel
             if max_weight > 70.0 or total_volume > 18000.0 or total_weight > 80.0 or total_dim_weight > 250.0:  # LTL
@@ -743,7 +743,7 @@ def drop_ship_quote(api_request):
                     if extra_units > 0:
                         item_rate += extra_units * 20
                 else:
-                    return 'Shipment Too Large for LTL'
+                    return {'total': 'Shipment Too Large for LTL', 'weight': total_weight}
             else:  # parcel
                 if max(total_weight, total_dim_weight) < 50.0:
                     freight_factor = 'up to 50'
@@ -754,7 +754,7 @@ def drop_ship_quote(api_request):
                 else:
                     freight_factor = '120 to 150'
                 item_rate = multi_parcel_dropship[freight_factor][zone]
-    return item_rate + surcharge
+    return {'total': item_rate + surcharge, 'weight': total_weight}
 
 
 @app.route('/freight_quote', methods=['PUT', 'OPTIONS'])
@@ -771,7 +771,7 @@ def freight_quote():
         else:
             return build_cors_response(f"Error: Not a valid freight type")
 
-        return build_cors_response({'total': rate_total})
+        return build_cors_response(rate_total)
 
 
 @app.errorhandler(401)
