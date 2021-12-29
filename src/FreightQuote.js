@@ -289,7 +289,7 @@ const FreightQuote = (props) => {
               <CardWithIcon title="Your Quote:" subtitle={freightAmount} icon={LocalShippingIcon} />
           </Box>
           <Box className={classes.output}>
-              <CardWithIcon title="Total Weight:" subtitle={weight} icon={ScaleIcon} />
+              <CardWithIcon title="Total Weight (lbs):" subtitle={weight} icon={ScaleIcon} />
           </Box>
           <VerticalSpacer />
               { configData.mode === "production" ? "" : <pre>
