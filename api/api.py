@@ -611,7 +611,7 @@ def dealer_quote(api_request):
     except KeyError:
         pass
 
-    return {'total':flat_rate + item_rate}
+    return {'total': flat_rate + item_rate}
 
 
 def drop_ship_quote(api_request):
@@ -634,9 +634,9 @@ def drop_ship_quote(api_request):
     total_cubic_feet = total_volume / 1728.0
 
     total_dim_weight = total_volume / 139.0 * 1.3  # add 30% for inefficient packing
-    print(f'total qty: {total_qty}, total weight: {total_weight}, max weight: {max_weight}, '
-          f'total volume: {total_volume}, total height: {total_height}, total dim weight: {total_dim_weight}, '
-          f'total cubic feet: {total_cubic_feet}')
+    logging.info(f'total qty: {total_qty}, total weight: {total_weight}, max weight: {max_weight}, '
+                 f'total volume: {total_volume}, total height: {total_height}, total dim weight: {total_dim_weight}, '
+                 f'total cubic feet: {total_cubic_feet}')
 
     try:
         ship_to_zip = api_request['shipToZip']
