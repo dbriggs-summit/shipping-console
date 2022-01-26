@@ -634,7 +634,7 @@ def drop_ship_quote(api_request):
     total_cubic_feet = total_volume / 1728.0
 
     total_dim_weight = total_volume / 139.0 * 1.3  # add 30% for inefficient packing
-    logging.info(f'total qty: {total_qty}, total weight: {total_weight}, max weight: {max_weight}, '
+    logging.debug(f'total qty: {total_qty}, total weight: {total_weight}, max weight: {max_weight}, '
                  f'total volume: {total_volume}, total height: {total_height}, total dim weight: {total_dim_weight}, '
                  f'total cubic feet: {total_cubic_feet}')
 
