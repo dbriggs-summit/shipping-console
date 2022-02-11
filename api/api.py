@@ -634,7 +634,7 @@ def drop_ship_quote(api_request):
     total_cubic_feet = total_volume / 1728.0
 
     total_dim_weight = total_volume / 139.0 * 1.3  # add 30% for inefficient packing
-    #logging.debug(f'''total qty: {total_qty}, total weight: {total_weight}, max weight: {max_weight},
+    # logging.debug(f'''total qty: {total_qty}, total weight: {total_weight}, max weight: {max_weight},
     #              total volume: {total_volume}, total height: {total_height}, total dim weight: {total_dim_weight},
     #              total cubic feet: {total_cubic_feet}''')
 
@@ -754,7 +754,7 @@ def drop_ship_quote(api_request):
                 else:
                     freight_factor = '120 to 150'
                 item_rate = multi_parcel_dropship[freight_factor][zone]
-    return {'total': item_rate + surcharge, 'weight': total_weight}
+    return {'total': item_rate * surcharge * .01, 'weight': total_weight}
 
 
 @app.route('/freight_quote', methods=['PUT', 'OPTIONS'])
