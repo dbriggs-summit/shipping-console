@@ -754,7 +754,7 @@ def drop_ship_quote(api_request):
                 else:
                     freight_factor = '120 to 150'
                 item_rate = multi_parcel_dropship[freight_factor][zone]
-    return {'total': item_rate * surcharge * .01, 'weight': total_weight}
+    return {'total': item_rate + (item_rate * surcharge * .01), 'weight': total_weight}
 
 
 @app.route('/freight_quote', methods=['PUT', 'OPTIONS'])
