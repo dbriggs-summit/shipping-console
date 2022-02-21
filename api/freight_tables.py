@@ -10,8 +10,9 @@ order_matrix = {
         '2-3': 0,
         '4-6': 0,
         '7-11': 0,
-        '12-15': 75,
-        '16-19': 50
+        '12-15': 100,
+        '16-19': 75,
+        '20-34': 50
     },
     3: {
 
@@ -20,318 +21,318 @@ order_matrix = {
 item_matrix = {
     1: {    # NY METRO
         '1': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '2-3': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '4-6': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '7-11': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '12-15': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '16-19': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '20-23': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '24-29': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '30-35': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '36-47': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '48+': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         }
     },
     2: {    # Northeast (ME, NH, VT, MA, RI, PA, CT, NY, NJ, ME, DE)
         '1': {
-            "Parcel": 100,
-            "Compact": 100,
-            "Full Size": 120,
-            "Oversized": 150,
-            "Double Size": 240
+            "parcel": 125,
+            "compact": 125,
+            "full size": 160,
+            "oversized": 195,
+            "double size": 320
         },
         '2-3': {
-            "Parcel": 60,
-            "Compact": 60,
-            "Full Size": 80,
-            "Oversized": 95,
-            "Double Size": 160
+            "parcel": 75,
+            "compact": 75,
+            "full size": 90,
+            "oversized": 140,
+            "double size": 180
         },
         '4-6': {
-            "Parcel": 50,
-            "Compact": 50,
-            "Full Size": 50,
-            "Oversized": 50,
-            "Double Size": 50
+            "parcel": 50,
+            "compact": 50,
+            "full size": 75,
+            "oversized": 90,
+            "double size": 150
         },
         '7-11': {
-            "Parcel": 40,
-            "Compact": 40,
-            "Full Size": 40,
-            "Oversized": 40,
-            "Double Size": 40
+            "parcel": 40,
+            "compact": 40,
+            "full size": 60,
+            "oversized": 75,
+            "double size": 120
         },
         '12-15': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '16-19': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '20-23': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '24-29': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '30-35': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '36-47': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         },
         '48+': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         }
     },
     3: {    # East of Mississippi River
         '1': {
-            "Parcel": 105,
-            "Compact": 105,
-            "Full Size": 135,
-            "Oversized": 175,
-            "Double Size": 270
+            "parcel": 130,
+            "compact": 130,
+            "full size": 165,
+            "oversized": 215,
+            "double size": 330
         },
         '2-3': {
-            "Parcel": 85,
-            "Compact": 85,
-            "Full Size": 100,
-            "Oversized": 135,
-            "Double Size": 200
+            "parcel": 85,
+            "compact": 85,
+            "full size": 100,
+            "oversized": 160,
+            "double size": 200
         },
         '4-6': {
-            "Parcel": 70,
-            "Compact": 70,
-            "Full Size": 85,
-            "Oversized": 120,
-            "Double Size": 170
+            "parcel": 70,
+            "compact": 70,
+            "full size": 95,
+            "oversized": 125,
+            "double size": 190
         },
         '7-11': {
-            "Parcel": 55,
-            "Compact": 55,
-            "Full Size": 70,
-            "Oversized": 100,
-            "Double Size": 140
+            "parcel": 55,
+            "compact": 55,
+            "full size": 80,
+            "oversized": 110,
+            "double size": 160
         },
         '12-15': {
-            "Parcel": 40,
-            "Compact": 40,
-            "Full Size": 55,
-            "Oversized": 80,
-            "Double Size": 110
+            "parcel": 40,
+            "compact": 40,
+            "full size": 60,
+            "oversized": 80,
+            "double size": 120
         },
         '16-19': {
-            "Parcel": 30,
-            "Compact": 30,
-            "Full Size": 40,
-            "Oversized": 60,
-            "Double Size": 80
+            "parcel": 30,
+            "compact": 30,
+            "full size": 45,
+            "oversized": 60,
+            "double size": 90
         },
         '20-23': {
-            "Parcel": 25,
-            "Compact": 25,
-            "Full Size": 35,
-            "Oversized": 50,
-            "Double Size": 70
+            "parcel": 25,
+            "compact": 25,
+            "full size": 35,
+            "oversized": 50,
+            "double size": 70
         },
         '24-29': {
-            "Parcel": 15,
-            "Compact": 15,
-            "Full Size": 20,
-            "Oversized": 30,
-            "Double Size": 40
+            "parcel": 20,
+            "compact": 20,
+            "full size": 30,
+            "oversized": 40,
+            "double size": 60
         },
         '30-35': {
-            "Parcel": 10,
-            "Compact": 10,
-            "Full Size": 15,
-            "Oversized": 25,
-            "Double Size": 30
+            "parcel": 15,
+            "compact": 15,
+            "full size": 25,
+            "oversized": 30,
+            "double size": 50
         },
         '36-47': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 10,
+            "compact": 10,
+            "full size": 15,
+            "oversized": 25,
+            "double size": 30
         },
         '48+': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         }
     },
     4: {    # West of Mississippi River
         '1': {
-            "Parcel": 115,
-            "Compact": 115,
-            "Full Size": 145,
-            "Oversized": 195,
-            "Double Size": 290
+            "parcel": 135,
+            "compact": 135,
+            "full size": 180,
+            "oversized": 225,
+            "double size": 360
         },
         '2-3': {
-            "Parcel": 95,
-            "Compact": 95,
-            "Full Size": 115,
-            "Oversized": 175,
-            "Double Size": 230
+            "parcel": 95,
+            "compact": 95,
+            "full size": 150,
+            "oversized": 195,
+            "double size": 300
         },
         '4-6': {
-            "Parcel": 80,
-            "Compact": 80,
-            "Full Size": 100,
-            "Oversized": 160,
-            "Double Size": 200
+            "parcel": 80,
+            "compact": 80,
+            "full size": 120,
+            "oversized": 160,
+            "double size": 240
         },
         '7-11': {
-            "Parcel": 60,
-            "Compact": 60,
-            "Full Size": 80,
-            "Oversized": 125,
-            "Double Size": 160
+            "parcel": 60,
+            "compact": 60,
+            "full size": 90,
+            "oversized": 125,
+            "double size": 180
         },
         '12-15': {
-            "Parcel": 45,
-            "Compact": 45,
-            "Full Size": 70,
-            "Oversized": 100,
-            "Double Size": 140
+            "parcel": 50,
+            "compact": 50,
+            "full size": 75,
+            "oversized": 100,
+            "double size": 150
         },
         '16-19': {
-            "Parcel": 40,
-            "Compact": 40,
-            "Full Size": 65,
-            "Oversized": 90,
-            "Double Size": 130
+            "parcel": 45,
+            "compact": 45,
+            "full size": 70,
+            "oversized": 90,
+            "double size": 140
         },
         '20-23': {
-            "Parcel": 35,
-            "Compact": 35,
-            "Full Size": 55,
-            "Oversized": 75,
-            "Double Size": 110
+            "parcel": 40,
+            "compact": 40,
+            "full size": 60,
+            "oversized": 80,
+            "double size": 120
         },
         '24-29': {
-            "Parcel": 30,
-            "Compact": 30,
-            "Full Size": 45,
-            "Oversized": 60,
-            "Double Size": 90
+            "parcel": 35,
+            "compact": 35,
+            "full size": 50,
+            "oversized": 60,
+            "double size": 100
         },
         '30-35': {
-            "Parcel": 25,
-            "Compact": 25,
-            "Full Size": 35,
-            "Oversized": 50,
-            "Double Size": 70
+            "parcel": 30,
+            "compact": 30,
+            "full size": 45,
+            "oversized": 50,
+            "double size": 90
         },
         '36-47': {
-            "Parcel": 20,
-            "Compact": 20,
-            "Full Size": 25,
-            "Oversized": 35,
-            "Double Size": 50
+            "parcel": 25,
+            "compact": 25,
+            "full size": 35,
+            "oversized": 40,
+            "double size": 70
         },
         '48+': {
-            "Parcel": 0,
-            "Compact": 0,
-            "Full Size": 0,
-            "Oversized": 0,
-            "Double Size": 0
+            "parcel": 0,
+            "compact": 0,
+            "full size": 0,
+            "oversized": 0,
+            "double size": 0
         }
     }
 }
@@ -372,14 +373,14 @@ single_dropship = {
         3: 145
     },
     '5A': {
-        1: 170,
+        1: 165,
         2: 180,
         3: 190
     },
     '6': {
-        1: 190,
-        2: 205,
-        3: 220
+        1: 185,
+        2: 195,
+        3: 205
     },
     '7': {
         1: 225,
@@ -387,14 +388,14 @@ single_dropship = {
         3: 265
     },
     '8': {
-        1: 295,
-        2: 320,
-        3: 345
+        1: 268,
+        2: 278,
+        3: 297
     },
     '9': {
-        1: 345,
-        2: 370,
-        3: 395
+        1: 298,
+        2: 310,
+        3: 340
     }
 }
 
@@ -427,10 +428,15 @@ multi_ltl_dropship = {
         2: 140,
         3: 145
     },
-    '100 to 199': {
-        1: 190,
-        2: 205,
-        3: 220
+    '100 to 150': {
+        1: 155,
+        2: 165,
+        3: 175
+    },
+    '151 to 199': {
+        1: 185,
+        2: 195,
+        3: 205
     },
     '200 to 299': {
         1: 225,
@@ -438,97 +444,102 @@ multi_ltl_dropship = {
         3: 265
     },
     '300 to 399': {
-        1: 295,
-        2: 320,
-        3: 345
+        1: 268,
+        2: 278,
+        3: 297
     },
     '400 to 499': {
-        1: 345,
-        2: 370,
-        3: 385
+        1: 298,
+        2: 310,
+        3: 340
     },
     '500 to 599': {
-        1: 365,
-        2: 400,
-        3: 425
+        1: 298,
+        2: 310,
+        3: 340
     },
     '600 to 699': {
-        1: 385,
-        2: 430,
-        3: 465
+        1: 310,
+        2: 330,
+        3: 475
     },
     '700 to 799': {
-        1: 405,
-        2: 460,
-        3: 505
+        1: 325,
+        2: 355,
+        3: 510
     },
     '800 to 899': {
-        1: 425,
-        2: 490,
+        1: 340,
+        2: 370,
         3: 545
     },
     '900 to 999': {
-        1: 445,
-        2: 520,
+        1: 350,
+        2: 380,
         3: 585
     },
-    'over 1000': {
-        1: 465,
-        2: 550,
+    '1000 to 1099': {
+        1: 350,
+        2: 410,
+        3: 625
+    },
+    '1100+': {
+        1: 350,
+        2: 410,
         3: 625
     }
 }
 
 dropship_zone = {
-    'AL': (2, 10),
-    'AR': (2, 10),
-    'AZ': (3, 5),
-    'CA': (3, 10),
-    'CO': (3, 5),
-    'CT': (1, 0),
-    'DC': (1, 5),
-    'DE': (1, 0),
-    'FL': (2, 10),
-    'GA': (2, 5),
-    'IA': (2, 10),
-    'ID': (3, 25),
-    'IL': (2, 0),
-    'IN': (1, 10),
-    'KS': (2, 10),
-    'KY': (1, 10),
-    'LA': (2, 10),
-    'MA': (1, 5),
-    'MD': (1, 5),
-    'ME': (1, 10),
-    'MI': (1, 10),
-    'MN': (3, 5),
-    'MO': (2, 5),
-    'MS': (2, 10),
-    'MT': (3, 25),
-    'NC': (2, 0),
-    'ND': (3, 20),
-    'NE': (2, 15),
-    'NH': (1, 5),
-    'NJ': (1, 0),
-    'NM': (3, 5),
-    'NV': (3, 10),
-    'NY': (1, 0),
-    'OH': (1, 5),
-    'OK': (2, 10),
-    'OR': (3, 10),
-    'PA': (1, 0),
-    'RI': (1, 0),
-    'SC': (2, 0),
-    'SD': (3, 20),
-    'TN': (2, 0),
-    'TX': (2, 10),
-    'UT': (3, 15),
-    'VA': (1, 0),
-    'VT': (1, 5),
-    'WA': (3, 10),
-    'WI': (2, 5),
-    'WV': (1, 5),
-    'WY': (3, 20)
+    'AL': (2, 5, 10),
+    'AR': (2, 5, 20),
+    'AZ': (3, 5, 0),
+    'CA': (3, 5, 0),
+    'CO': (3, 5, 0),
+    'CT': (1, 0, 0),
+    'DC': (1, 10, 20),
+    'DE': (1, 0, 0),
+    'FL': (2, 10, 35),
+    'GA': (2, 5, 5),
+    'IA': (2, 10, 30),
+    'ID': (3, 10, 20),
+    'IL': (2, 5, 0),
+    'IN': (1, 10, 20),
+    'KS': (2, 0, 0),
+    'KY': (1, 10, 30),
+    'LA': (2, 10, 35),
+    'MA': (1, 0, 0),
+    'MD': (1, 0, 0),
+    'ME': (1, 10, 30),
+    'MI': (1, 10, 25),
+    'MN': (3, 0, 0),
+    'MO': (2, 10, 25),
+    'MS': (2, 10, 10),
+    'MT': (3, 10, 15),
+    'NC': (2, 0, 0),
+    'ND': (3, 10, 5),
+    'NE': (2, 10, 35),
+    'NH': (1, 5, 10),
+    'NJ': (1, 0, 0),
+    'NM': (3, 5, 5),
+    'NV': (3, 0, 0),
+    'NY': (1, 0, 0),
+    'OH': (1, 5, 5),
+    'OK': (2, 10, 40),
+    'OR': (3, 5, 5),
+    'PA': (1, 0, 0),
+    'RI': (1, 0, 0),
+    'SC': (2, 5, 0),
+    'SD': (3, 10, 10),
+    'TN': (2, 0, 0),
+    'TX': (2, 10, 45),
+    'UT': (3, 5, 5),
+    'VA': (1, 5, 0),
+    'VT': (1, 5, 10),
+    'WA': (3, 5, 5),
+    'WI': (2, 5, 15),
+    'WV': (1, 10, 15),
+    'WY': (3, 10, 20)
 }
 dealer_zone = {
     'AL': 3,

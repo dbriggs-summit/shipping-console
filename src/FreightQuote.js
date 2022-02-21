@@ -79,7 +79,7 @@ const FreightQuote = (props) => {
                 "itemHeight": "",
                 "itemWidth": "",
                 "itemDepth": "",
-                "unitSize": "Full Size",
+                "unitSize": "",
                 "category": "",
                 "errorText": ""
             }
@@ -105,7 +105,10 @@ const FreightQuote = (props) => {
                   .then(json => {
                       if (json[0].weight === 0 || json[0].width === 0) {
                           lines[index].errorText = "Item has no weights and/or dims. Please contact inventory";
-                      } else {
+                      } else if(json[0].unitSize === "" && custFreightType === "Dealer" ) {
+                          lines[index].errorText = "Item has no size for GFP"
+                      }
+                      else {
                           lines[index].errorText = "";
                       }
                       lines[index].itemWidth = json[0].width;
@@ -113,6 +116,7 @@ const FreightQuote = (props) => {
                       lines[index].itemHeight = json[0].height;
                       lines[index].itemWeight = json[0].weight;
                       lines[index].category = json[0].category;
+                      lines[index].unitSize = json[0].gfpsize;
                   })
                   .catch((e) => {
                       lines[index].itemWidth = "";
@@ -120,6 +124,7 @@ const FreightQuote = (props) => {
                       lines[index].itemHeight = "";
                       lines[index].itemWeight = "";
                       lines[index].category = "";
+                      lines[index].unitSize = "";
                       lines[index].errorText = "Please enter a valid item";
                       /*notify('Problem getting quote: ' + e,'warning',
                         {},false, 5000)*/
@@ -155,7 +160,7 @@ const FreightQuote = (props) => {
             itemHeight: '0',
             itemDepth: '0',
             itemWidth: '0',
-            unitSize: 'Full Size',
+            unitSize: '',
             category: '',
             errorText: ""
         });

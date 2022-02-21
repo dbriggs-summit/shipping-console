@@ -478,13 +478,16 @@ def item(item_id):
     elif request.method == 'GET':
         # return json for one order
         # this is a sql injection risk, but parameterized queries through sqlalchemy don't seem to work with pyodbc
-        result = session.execute(f"select itemid, Descr1, isnull(x04472490_Weight, 0) weight, "
+        result = session.execute(f"select item.itemid, Descr1, isnull(x04472490_Weight, 0) weight, "
                                  f"isnull(x04472490_Height, 0) height, isnull(x04472490_Width, 0) width, "
-                                 f"isnull(x04472490_Depth, 0) depth, isnull(category.descr, '') category from item "
+                                 f"isnull(x04472490_Depth, 0) depth, isnull(category.descr, '') [category],"
+                                 f"isnull(zzitemextended.gfpsize, '') gfpsize "
+                                 f"from item "
+                                 f"left outer join zzitemextended on item.initemid = zzitemextended.initemid "
                                  f"left outer join category on item.excategoryid = category.incategoryid "
-                                 f"where itemid = '{item_id}'")
+                                 f"where item.itemid = '{item_id}'")
         js = result_item_process(result.fetchone())
-
+        print(js)
         session.close()
         if js:
             response = build_cors_response(js)
@@ -587,8 +590,9 @@ def dealer_quote(api_request):
     if flat_rate == 0:
         size_list = {}
         for line in api_request['lines']:
-            if line['unitSize'] and line['unitSize'] != '':
-                if line['unitSize'] != 'Parcel':
+            if line['unitSize'] and line['unitSize'].lower() != '':
+                line['unitSize'] = line['unitSize'].lower()
+                if line['unitSize'] != 'parcel':
                     if line['unitSize'] in size_list:
                         size_list[line['unitSize']] += int(line['itemQty'])
                     else:
@@ -599,8 +603,8 @@ def dealer_quote(api_request):
                     else:
                         size_list[line['unitSize']] = int(line['itemQty']) * 0.25
 
-        if 'Parcel' in size_list:
-            size_list['Parcel'] = int(math.ceil(size_list['Parcel']))
+        if 'parcel' in size_list:
+            size_list['parcel'] = int(math.ceil(size_list['parcel']))
             # print(size_list['Parcel'])
         for size in size_list.keys():
             item_rate += item_matrix[zone][total_pkg_units][size] * size_list[size]
@@ -647,9 +651,9 @@ def drop_ship_quote(api_request):
         return {'total': 'Unknown Location', 'weight': total_weight}
 
     try:
-        zone, surcharge = dropship_zone[ship_to_state]
+        zone, surcharge, multi_surcharge = dropship_zone[ship_to_state]
     except KeyError:
-        zone = -1
+        return {'total': 'Unknown Location', 'weight': total_weight}
     if zone == -1:
         return {'total': 'Unknown Location', 'weight': total_weight}
 
@@ -682,6 +686,7 @@ def drop_ship_quote(api_request):
             else:
                 freight_factor = '1'
         item_rate = single_dropship[freight_factor][zone]
+        surcharge_amt = item_rate * surcharge * .01
     else:
         # multi-piece shipment
         if total_cubic_feet > 700.0:
@@ -715,8 +720,10 @@ def drop_ship_quote(api_request):
                 if total_pallet <= 9:
                     if total_weight < 100:
                         freight_factor = 'up to 100'
+                    elif total_weight < 150:
+                        freight_factor = '100 to 149'
                     elif total_weight < 200:
-                        freight_factor = '100 to 199'
+                        freight_factor = '150 to 199'
                     elif total_weight < 300:
                         freight_factor = '200 to 299'
                     elif total_weight < 400:
@@ -733,15 +740,22 @@ def drop_ship_quote(api_request):
                         freight_factor = '800 to 899'
                     elif total_weight < 1000:
                         freight_factor = '900 to 999'
+                    elif total_weight < 1100:
+                        freight_factor = '1000 to 1099'
                     else:
-                        freight_factor = 'over 1000'
+                        freight_factor = '1100+'
                         extra_units = (total_weight - 1000) // 100
-                        print(extra_units)
+                        logging.info(extra_units)
 
                     item_rate = multi_ltl_dropship[freight_factor][zone]
 
                     if extra_units > 0:
-                        item_rate += extra_units * 20
+                        if zone == 1:
+                            item_rate += extra_units * 20
+                        elif zone == 2:
+                            item_rate += extra_units * 30
+                        elif zone == 3:
+                            item_rate += extra_units * 40
                 else:
                     return {'total': 'Shipment Too Large for LTL', 'weight': total_weight}
             else:  # parcel
@@ -754,7 +768,8 @@ def drop_ship_quote(api_request):
                 else:
                     freight_factor = '120 to 150'
                 item_rate = multi_parcel_dropship[freight_factor][zone]
-    return {'total': item_rate + (item_rate * surcharge * .01), 'weight': total_weight}
+                surcharge_amt = item_rate * multi_surcharge * .01
+    return {'total': item_rate + surcharge_amt, 'weight': total_weight}
 
 
 @app.route('/freight_quote', methods=['PUT', 'OPTIONS'])
@@ -836,10 +851,10 @@ def result_item_process(result):
     if result:
         if isinstance(result, list):
             return [{'item_id': x[0], 'descr1': x[1], 'weight': x[2], 'height': x[3], 'width': x[4], 'depth': x[5],
-                     'category': x[6]} for x in result]
+                     'category': x[6], 'gfpsize': x[7]} for x in result]
         else:
             return [{'item_id': result[0], 'descr1': result[1], 'weight': result[2], 'height': result[3],
-                     'width': result[4], 'depth': result[5], 'category': result[6]}]
+                     'width': result[4], 'depth': result[5], 'category': result[6], 'gfpsize': result[7]}]
 
 
 def build_cors_response(output, status='', **kwargs):
