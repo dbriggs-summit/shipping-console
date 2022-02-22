@@ -541,6 +541,8 @@ def dealer_quote(api_request):
     flat_rate = 0
     item_rate = 0
     ship_to_zip = api_request['shipToZip']
+    total_weight = reduce(lambda x, y: x + y, [float(x['itemWeight']) * int(x['itemQty'])
+                                               for x in api_request['lines']])
     try:
         ship_to_state = zip_codes[ship_to_zip]['state_code']
         zone = dealer_zone[ship_to_state]
@@ -615,7 +617,7 @@ def dealer_quote(api_request):
     except KeyError:
         pass
 
-    return {'total': flat_rate + item_rate}
+    return {'total': flat_rate + item_rate, 'weight': total_weight}
 
 
 def drop_ship_quote(api_request):
