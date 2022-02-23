@@ -770,7 +770,7 @@ def drop_ship_quote(api_request):
                 else:
                     freight_factor = '120 to 150'
                 item_rate = multi_parcel_dropship[freight_factor][zone]
-                surcharge_amt = item_rate * multi_surcharge * .01
+            surcharge_amt = item_rate * multi_surcharge * .01
     return {'total': item_rate + surcharge_amt, 'weight': total_weight}
 
 
