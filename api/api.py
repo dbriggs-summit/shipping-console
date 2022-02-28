@@ -543,6 +543,18 @@ def dealer_quote(api_request):
     ship_to_zip = api_request['shipToZip']
     total_weight = reduce(lambda x, y: x + y, [float(x['itemWeight']) * int(x['itemQty'])
                                                for x in api_request['lines']])
+
+    if len(api_request['lines']) > 1:
+        if total_weight > 150:
+            freight_type = 'ltl'
+        else:
+            freight_type = 'parcel'
+    else:
+        if total_weight > 80:
+            freight_type = 'ltl'
+        else:
+            freight_type = 'parcel'
+
     try:
         ship_to_state = zip_codes[ship_to_zip]['state_code']
         zone = dealer_zone[ship_to_state]
@@ -617,7 +629,7 @@ def dealer_quote(api_request):
     except KeyError:
         pass
 
-    return {'total': flat_rate + item_rate, 'weight': total_weight}
+    return {'total': flat_rate + item_rate, 'weight': total_weight, 'type': freight_type}
 
 
 def drop_ship_quote(api_request):
@@ -661,6 +673,10 @@ def drop_ship_quote(api_request):
 
     if total_qty == 1:
         # single-piece shipment
+        if total_weight > 80.0:
+            freight_type = 'ltl'
+        else:
+            freight_type = 'parcel'
         if api_request['lines'][0]['itemNumber'][:3] == 'C48' or \
                 api_request['lines'][0]['itemNumber'][:3] == 'C60':
             freight_factor = '7'
@@ -696,7 +712,8 @@ def drop_ship_quote(api_request):
             return {'total': 'Shipment Too Large', 'weight': total_weight}
         else:
             # check LTL or Parcel
-            if max_weight > 70.0 or total_volume > 18000.0 or total_weight > 80.0 or total_dim_weight > 250.0:  # LTL
+            if max_weight > 70.0 or total_volume > 18000.0 or total_weight > 80.0 or total_dim_weight > 250.0:
+                freight_type = 'ltl'  # LTL
                 whole_pallet = 0
                 half_pallet = 0
                 small_pallet = 0
@@ -761,6 +778,7 @@ def drop_ship_quote(api_request):
                 else:
                     return {'total': 'Shipment Too Large for LTL', 'weight': total_weight}
             else:  # parcel
+                freight_type = 'parcel'
                 if max(total_weight, total_dim_weight) < 50.0:
                     freight_factor = 'up to 50'
                 elif max(total_weight, total_dim_weight) < 80.0:
@@ -771,7 +789,7 @@ def drop_ship_quote(api_request):
                     freight_factor = '120 to 150'
                 item_rate = multi_parcel_dropship[freight_factor][zone]
             surcharge_amt = item_rate * multi_surcharge * .01
-    return {'total': item_rate + surcharge_amt, 'weight': total_weight}
+    return {'total': item_rate + surcharge_amt, 'weight': total_weight, 'type': freight_type}
 
 
 @app.route('/freight_quote', methods=['PUT', 'OPTIONS'])
