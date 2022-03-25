@@ -799,6 +799,7 @@ def freight_quote():
         response.headers['Allow'] = 'OPTIONS', 'PUT'
         return response
     if request.method == 'PUT':
+        logging.info(request.data)
         if request.json['custFreightType'] == "Dealer":
             rate_total = dealer_quote(request.json)
         elif request.json['custFreightType'] == "Drop Ship":
