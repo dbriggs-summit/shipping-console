@@ -799,11 +799,11 @@ def freight_quote():
         response.headers['Allow'] = 'OPTIONS', 'PUT'
         return response
     if request.method == 'PUT':
-        logging.info(f'Content-Type: {request.content_type}')
-        logging.info(f'Content-Length: {request.content_length}')
-        logging.info(f'Content-Encoding: {request.content_encoding}')
-        logging.info(request.data)
-        logging.info(request.form)
+        logging.debug(f'Content-Type: {request.content_type}')
+        logging.debug(f'Content-Length: {request.content_length}')
+        logging.debug(f'Content-Encoding: {request.content_encoding}')
+        logging.debug(request.data)
+        logging.debug(request.form)
         if request.content_type.startswith('application/json'):
             req = request.json
         elif request.content_type.startswith('application/x-www-form-urlencoded'):   #Netsuite sends data as a form
@@ -814,7 +814,7 @@ def freight_quote():
             rate_total = drop_ship_quote(req)
         else:
             return build_cors_response(f"Error: Not a valid freight type")
-
+        logging.info(rate_total)
         return build_cors_response(rate_total)
 
 
