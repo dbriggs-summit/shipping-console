@@ -803,6 +803,7 @@ def freight_quote():
         logging.info(f'Content-Length: {request.content_length}')
         logging.info(f'Content-Encoding: {request.content_encoding}')
         logging.info(request.data)
+        logging.info(request.form)
         if request.json['custFreightType'] == "Dealer":
             rate_total = dealer_quote(request.json)
         elif request.json['custFreightType'] == "Drop Ship":
