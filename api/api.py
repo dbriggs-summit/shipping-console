@@ -807,7 +807,7 @@ def freight_quote():
         if request.content_type.startswith('application/json'):
             req = request.json
         elif request.content_type.startswith('application/x-www-form-urlencoded'):   #Netsuite sends data as a form
-            req = request.form
+            req = request.form[0]
         if req['custFreightType'] == "Dealer":
             rate_total = dealer_quote(req)
         elif req['custFreightType'] == "Drop Ship":
