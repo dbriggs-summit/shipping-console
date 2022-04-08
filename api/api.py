@@ -804,10 +804,14 @@ def freight_quote():
         logging.info(f'Content-Encoding: {request.content_encoding}')
         logging.info(request.data)
         logging.info(request.form)
-        if request.json['custFreightType'] == "Dealer":
-            rate_total = dealer_quote(request.json)
-        elif request.json['custFreightType'] == "Drop Ship":
-            rate_total = drop_ship_quote(request.json)
+        if request.content_type.startswith('application/json'):
+            req = request.json
+        elif request.content_type.startswith('application/x-www-form-urlencoded'):   #Netsuite sends data as a form
+            req = request.form
+        if req['custFreightType'] == "Dealer":
+            rate_total = dealer_quote(req)
+        elif req['custFreightType'] == "Drop Ship":
+            rate_total = drop_ship_quote(req)
         else:
             return build_cors_response(f"Error: Not a valid freight type")
 
