@@ -799,7 +799,7 @@ def freight_quote():
         response.headers['Allow'] = 'OPTIONS', 'PUT'
         return response
     if request.method == 'PUT':
-        logging.debug(f'Content-Type: {request.content_type}')
+        logging.info(f'Content-Type: {request.content_type}')
         logging.debug(f'Content-Length: {request.content_length}')
         logging.debug(f'Content-Encoding: {request.content_encoding}')
         logging.debug(request.data)
