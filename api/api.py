@@ -476,7 +476,7 @@ def item(item_id):
         session.close()
         return
     elif request.method == 'GET':
-        logging.debug(f'/items: {request.content_type}')
+        logging.info(f'[items] Content-Type: {request.content_type}')
         # return json for one order
         # this is a sql injection risk, but parameterized queries through sqlalchemy don't seem to work with pyodbc
         result = session.execute(f"select item.itemid, Descr1, isnull(x04472490_Weight, 0) weight, "
